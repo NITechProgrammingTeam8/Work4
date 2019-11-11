@@ -1,28 +1,33 @@
-import java.util.*;
-import java.io.*;
+import java.io.FileReader;
+import java.io.StreamTokenizer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.StringTokenizer;
 
 /**
  * RuleBaseSystem
- * 
+ *
  */
 public class RuleBaseSystem {
     static RuleBase rb;
     public static void main(String args[]){
         rb = new RuleBase();
-        rb.forwardChain();      
+        rb.forwardChain();
     }
 }
 
 /**
  * ワーキングメモリを表すクラス．
  *
- * 
+ *
  */
 class WorkingMemory {
-    ArrayList<String> assertions;    
+    //ArrayList<String> assertions;
+    ArrayList<Assertion> assertions;
 
     WorkingMemory(){
-        assertions = new ArrayList<String>();
+        //assertions = new ArrayList<String>();
+        assertions = new ArrayList<Assertion>();
     }
 
     /**
@@ -46,7 +51,7 @@ class WorkingMemory {
                 HashMap<String,String> binding = new HashMap<String,String>();
                 if((new Matcher()).matching(
                     (String)theAntecedents.get(n),
-                    (String)assertions.get(i),
+                    (String)assertions.get(i).getName(),
                     binding)){
                     bindings.add(binding);
                     success = true;
@@ -64,7 +69,7 @@ class WorkingMemory {
                 for(int j = 0 ; j < assertions.size() ; j++){
                     if((new Matcher()).matching(
                         (String)theAntecedents.get(n),
-                        (String)assertions.get(j),
+                        (String)assertions.get(j).getName(),
                         (HashMap)bindings.get(i))){
                         newBindings.add(bindings.get(i));
                         success = true;
@@ -78,7 +83,7 @@ class WorkingMemory {
             }
         }
     }
-    
+
     /**
      * アサーションをワーキングメモリに加える．
      *
@@ -86,7 +91,7 @@ class WorkingMemory {
      */
     public void addAssertion(String theAssertion){
         System.out.println("ADD:"+theAssertion);
-        assertions.add(theAssertion);
+        assertions.add(new Assertion(theAssertion));
     }
 
     /**
@@ -96,7 +101,18 @@ class WorkingMemory {
      * @return    含まれていれば true，含まれていなければ false
      */
     public boolean contains(String theAssertion){
-        return assertions.contains(theAssertion);
+    	int flag = 0;
+    	for (Assertion assertion : assertions) {
+    		if (assertion.getName().equals(theAssertion)) {
+    			flag++;
+    		}
+    	}
+    	if (flag <= 0) {
+    		return false;
+    	} else {
+    		return true;
+    	}
+        //return assertions.contains(theAssertion);
     }
 
     /**
@@ -107,13 +123,13 @@ class WorkingMemory {
     public String toString(){
         return assertions.toString();
     }
-    
+
 }
 
 /**
  * ルールベースを表すクラス．
  *
- * 
+ *
  */
 class RuleBase {
     String fileName;
@@ -121,7 +137,7 @@ class RuleBase {
     StreamTokenizer st;
     WorkingMemory wm;
     ArrayList<Rule> rules;
-    
+
     RuleBase(){
         fileName = "CarShop.data";
         wm = new WorkingMemory();
@@ -219,7 +235,7 @@ class RuleBase {
                                         consequent = st.sval;
                                     }
                                 }
-//                            } 
+//                            }
                         }
 			// ルールの生成
                         rules.add(new Rule(name,antecedents,consequent));
@@ -241,17 +257,19 @@ class RuleBase {
 /**
  * ルールを表すクラス．
  *
- * 
+ *
  */
 class Rule {
     String name;
     ArrayList<String> antecedents;
     String consequent;
+    static int id = 0;
 
     Rule(String theName,ArrayList<String> theAntecedents,String theConsequent){
         this.name = theName;
         this.antecedents = theAntecedents;
         this.consequent = theConsequent;
+        id++;
     }
 
     /**
@@ -289,14 +307,55 @@ class Rule {
     public String getConsequent(){
         return consequent;
     }
-    
+
+    /**
+     * ルールのidを返す．
+     *
+     * @return    通し番号を表す int
+     */
+    public int getId(){
+        return id;
+    }
+}
+
+/**
+ * アサーションを表すクラス．
+ *
+ *
+ */
+class Assertion {
+	String name;
+	static int id = 0;
+
+	Assertion(String theName){
+        this.name = theName;
+        id++;
+    }
+
+	/**
+     * アサーションをString形式で返す．
+     *
+     * @return    本体を表す String
+     */
+    public String getName(){
+        return name;
+    }
+
+    /**
+     * アサーションのidを返す．
+     *
+     * @return    通し番号を表す id
+     */
+    public int getId(){
+        return id;
+    }
 }
 
 class Matcher {
     StringTokenizer st1;
     StringTokenizer st2;
     HashMap<String,String> vars;
-    
+
     Matcher(){
         vars = new HashMap<String,String>();
     }
@@ -305,21 +364,21 @@ class Matcher {
         this.vars = bindings;
         return matching(string1,string2);
     }
-    
+
     public boolean matching(String string1,String string2){
         //System.out.println(string1);
         //System.out.println(string2);
-        
+
         // 同じなら成功
         if(string1.equals(string2)) return true;
-        
+
         // 各々トークンに分ける
         st1 = new StringTokenizer(string1);
         st2 = new StringTokenizer(string2);
 
         // 数が異なったら失敗
         if(st1.countTokens() != st2.countTokens()) return false;
-                
+
         // 定数同士
         for(int i = 0 ; i < st1.countTokens();){
             if(!tokenMatching(st1.nextToken(),st2.nextToken())){
@@ -327,7 +386,7 @@ class Matcher {
                 return false;
             }
         }
-        
+
         // 最後まで O.K. なら成功
         return true;
     }
