@@ -1,6 +1,14 @@
 import java.util.ArrayList;
 
 class View implements ViewInterface {
+	// 初期データ読み込み完了メソッド
+    public void successStart() {
+    	System.out.println("Successfully started");
+    }
+ // 更新データ再読み込み完了メソッド
+    public void successRestart() {
+    	System.out.println("Successfully restarted");
+    }
 	// ルール追加完了メソッド(void？)
  	public boolean successAddRule(boolean result) {
  		return result;

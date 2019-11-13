@@ -15,19 +15,27 @@ class Presenter {
     /*
      * 始めと終わりにやりたいことがあれば…
      *
-     *
-    // GUI起動時にTextDAOに対してテキストファイルからデータベースへの読み込みを指示する
-    // あおしゅー：起動時に必ずこのメソッドを呼んでください
-    // のりこさん：テキストファイルからデータベースへの読み込みを行うメソッドを用意してください
-    public void start() {
-        try {
-            textCon.readTextFile();
-            view.successStart();
-        } catch(FileNotFoundException e) {
-            view.showError(e.toString());
-        }
+     */
+    // GUI起動時に初期データの読み込みと出力
+    public void start(ArrayList<String> firstAssertions, String fileName) {
+    	rulebasesystem.start(firstAssertions, fileName);
+    	view.successStart();
     }
 
+    // 更新後のデータから再試行を行う
+    public void restart() {
+    	// ◎変更後のルールとアサーションの受け取り、それに基づいた出力の再構築
+    	ArrayList<Rule> rules = rulebasesystem.getRules();
+    	ArrayList<Assertion> assertions = rulebasesystem.getAssertions();
+    	System.out.println("長さ：" + assertions.size());
+    	//assertions.remove(6);
+    	//assertions.remove(6);
+    	//assertions.remove(6);
+    	rulebasesystem.restart(assertions, rules);
+    	view.successRestart();
+    }
+
+    /*
     // GUI終了時にTextDAOに対してデータベースからテキストファイルへの書き込みを指示する
     // あおしゅー：終了時に必ずこのメソッドを呼んでください
     // のりこさん：データベースからテキストファイルへの書き込みを行うメソッドを用意してください
@@ -41,6 +49,7 @@ class Presenter {
     }
     */
 
+    /*
     // 新規ルールを追加するように指示する
     public void addRule(String newRuleName, ArrayList<String> newRuleAntecedents, String newRuleConsequent) {
         try {
@@ -122,4 +131,17 @@ class Presenter {
         	view.showError(e.toString());
 		}
     }
+    */
+
+    // 始めにいれるアサーションの入れ方(これは任意で入れるようにするのか？)
+
+    // 処理のやり直しはいつやるか？？？
+
+    /*
+     * やること
+     *
+     * 1.アサーションの入力をリストで管理(恐らく成功)
+     * 2.出力を何(アサーション)と何(ルール)を使って何(アサーション)が出来たかを返す
+     * 3.処理のやり直しを行うためのメソッド(ルール変更時)(恐らく成功)
+     */
 }

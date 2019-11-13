@@ -9,10 +9,48 @@ import java.util.StringTokenizer;
  *
  */
 public class RuleBaseSystem {
-    static RuleBase rb;
+	static RuleBase rb;
+    static ArrayList<String> firstAssertions;
+    static String fileName;
+	// コンストラクタ
+	RuleBaseSystem () {
+		//RuleBase rb;
+		firstAssertions = new ArrayList<>();
+	}
+
     public static void main(String args[]){
-        rb = new RuleBase();
+    	fileName = "CarShop.data";
+    	firstAssertions.add("my-car is inexpensive");
+    	firstAssertions.add("my-car has a VTEC engine");
+    	firstAssertions.add("my-car is stylish");
+    	firstAssertions.add("my-car has several color models");
+    	firstAssertions.add("my-car has several seats");
+    	firstAssertions.add("my-car is a wagon");
+        rb = new RuleBase(firstAssertions, fileName);
         rb.forwardChain();
+    }
+
+    // ここで全クラス＆メソッドを管理
+    public void start(ArrayList<String> firstAssertions, String fileName) {
+    	//System.out.println("仮");
+    	rb = new RuleBase(firstAssertions, fileName);
+        rb.forwardChain();
+    }
+
+    // 再試行＆再構築
+    public void restart(ArrayList<Assertion> assertions, ArrayList<Rule> rules) {
+    	rb = new RuleBase(assertions, rules);
+    	rb.forwardChain();
+    }
+
+    // 更新済みルールの取得
+    public ArrayList<Rule> getRules() {
+    	return rb.getRules();
+    }
+
+    // 更新済みアサーションの取得
+    public ArrayList<Assertion> getAssertions() {
+    	return rb.getWorkingMemory().getAssertions();
     }
 }
 
@@ -92,6 +130,11 @@ class WorkingMemory {
     public void addAssertion(String theAssertion){
         System.out.println("ADD:"+theAssertion);
         assertions.add(new Assertion(theAssertion));
+        /*
+        for (Assertion assertion : assertions) {
+        	System.out.println(assertion.getName() + "◆" + assertion.getId());
+        }
+        */
     }
 
     /**
@@ -121,7 +164,11 @@ class WorkingMemory {
      * @return    ワーキングメモリの情報を表す String
      */
     public String toString(){
-        return assertions.toString();
+        return assertions.toString(); // 恐らく使用できない
+    }
+
+    public ArrayList<Assertion> getAssertions() {
+    	return assertions;
     }
 
 }
@@ -138,17 +185,34 @@ class RuleBase {
     WorkingMemory wm;
     ArrayList<Rule> rules;
 
-    RuleBase(){
-        fileName = "CarShop.data";
+    RuleBase(ArrayList<String> firstAssertions, String fileName){
+        //fileName = "CarShop.data";
         wm = new WorkingMemory();
-        wm.addAssertion("my-car is inexpensive");
-        wm.addAssertion("my-car has a VTEC engine");
-        wm.addAssertion("my-car is stylish");
-        wm.addAssertion("my-car has several color models");
-        wm.addAssertion("my-car has several seats");
-        wm.addAssertion("my-car is a wagon");
+        //wm.addAssertion("my-car is inexpensive");
+        //wm.addAssertion("my-car has a VTEC engine");
+        //wm.addAssertion("my-car is stylish");
+        //wm.addAssertion("my-car has several color models");
+        //wm.addAssertion("my-car has several seats");
+        //wm.addAssertion("my-car is a wagon");
+        for (String firstAssertion : firstAssertions) {
+        	wm.addAssertion(firstAssertion);
+        }
         rules = new ArrayList<Rule>();
         loadRules(fileName);
+    }
+
+    RuleBase(ArrayList<Assertion> assertions, ArrayList<Rule> rules) {
+    	this.rules = rules;
+    	// 必要性はあるのか
+    	for(int i = 0 ; i < rules.size() ; i++){
+            System.out.println("【再】" + ((Rule)rules.get(i)).toString() + "♪" + rules.get(i).getId());
+        }
+    	wm = new WorkingMemory();
+    	// 冗長的か
+    	for (Assertion assertion : assertions) {
+    		System.out.print("【再】");
+    		wm.addAssertion(assertion.getName());
+    	}
     }
 
     /**
@@ -162,7 +226,8 @@ class RuleBase {
             newAssertionCreated = false;
             for(int i = 0 ; i < rules.size(); i++){
                 Rule aRule = (Rule)rules.get(i);
-                System.out.println("apply rule:"+aRule.getName());
+                //System.out.println("apply rule:"+aRule.getName());
+                System.out.println("apply rule:"+aRule.getName()+" rule number☆"+aRule.getId()); // 【仮追加】
                 ArrayList<String> antecedents = aRule.getAntecedents();
                 String consequent  = aRule.getConsequent();
                 //HashMap bindings = wm.matchingAssertions(antecedents);
@@ -175,16 +240,37 @@ class RuleBase {
                                         (HashMap)bindings.get(j));
                         //ワーキングメモリーになければ成功
                         if(!wm.contains(newAssertion)){
-                            System.out.println("Success: "+newAssertion);
+                            //System.out.println("Success: "+newAssertion);
+                        	// まだ追加してないので、数字として正しいものは出てこない
+                            System.out.println("Success: "+newAssertion+" assertion number★"+aRule.getId()); // 【仮追加】
                             wm.addAssertion(newAssertion);
                             newAssertionCreated = true;
                         }
                     }
                 }
             }
-            System.out.println("Working Memory"+wm);
+            //System.out.println("Working Memory"+wm);
+            System.out.println("Working Memory"+printWorkingMemory(wm));
         } while(newAssertionCreated);
         System.out.println("No rule produces a new assertion");
+    }
+
+    private String printWorkingMemory(WorkingMemory wm) {
+    	ArrayList<Assertion> wmA = wm.getAssertions();
+    	StringBuffer buf = new StringBuffer();
+    	buf.append("[");
+    	for (int i = 0; i < wmA.size()-1; i++) {
+    		buf.append(wmA.get(i).getName());
+    		buf.append(", ");
+    	}
+    	buf.append(wmA.get(wmA.size()-1).getName());
+    	/*
+    	for (Assertion assertion : wmA) {
+    		buf.append(assertion.getName());
+    	}
+    	*/
+    	buf.append("]");
+    	return buf.toString();
     }
 
     private String instantiate(String thePattern, HashMap theBindings){
@@ -249,8 +335,17 @@ class RuleBase {
             System.out.println(e);
         }
         for(int i = 0 ; i < rules.size() ; i++){
-            System.out.println(((Rule)rules.get(i)).toString());
+        	//System.out.println(((Rule)rules.get(i)).toString());
+            System.out.println(((Rule)rules.get(i)).toString() + "♪" + rules.get(i).getId());
         }
+    }
+
+    public ArrayList<Rule> getRules() {
+    	return rules;
+    }
+
+    public WorkingMemory getWorkingMemory() {
+    	return wm;
     }
 }
 
@@ -260,16 +355,17 @@ class RuleBase {
  *
  */
 class Rule {
+	static int counter = 0;
     String name;
     ArrayList<String> antecedents;
     String consequent;
-    static int id = 0;
+    int id;
 
     Rule(String theName,ArrayList<String> theAntecedents,String theConsequent){
         this.name = theName;
         this.antecedents = theAntecedents;
         this.consequent = theConsequent;
-        id++;
+        id = counter++;
     }
 
     /**
@@ -324,12 +420,13 @@ class Rule {
  *
  */
 class Assertion {
+	static int counter = 0;
 	String name;
-	static int id = 0;
+	int id;
 
 	Assertion(String theName){
         this.name = theName;
-        id++;
+        id = counter++;
     }
 
 	/**

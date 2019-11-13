@@ -1,6 +1,10 @@
 import java.util.ArrayList;
 
 interface ViewInterface {
+	// 初期データ読み込み完了メソッド
+    void successStart();
+    // 更新データ再読み込み完了メソッド
+    void successRestart();
 	// ルール追加完了メソッド(void？)
 	boolean successAddRule(boolean result);
 	// ルール削除完了メソッド(void？)
