@@ -316,16 +316,157 @@
     Query: ?x is an Accord Wagon
     Answer:his-car is an Accord Wagon
 \end{lstlisting}
+まず,2行目では,コマンドとして java RuleBaseSystem "?x is an Accord Wagon" を実行しており,条件を満たすような?xを問う形式になっている.
+この後向き推論では,この?xを変数束縛として具体化することによって得ることを目的とする.
+ゆえに,実行例の3行目では,大元の仮説として"?x is an Accord Wagon"が設定されている. \\
+後向き推論では,仮説とルールの後件をマッチングさせることによって次の仮説を導き出し,仮説とワーキングメモリ内のアサーションのマッチングを行うことで変数束縛を行う.
+したがって,この2点に注目して実行例の解説を行うものとする.
+なお,バックトラック等の複雑な処理の解説も行うため,説明量がやや多くなることを断っておく. \\
 
+実行例の4・5行目では,CarRule11の後件と仮説のマッチングが成功している.
+すなわち,"?x10 is an Accord Wagon"と"?x is an Accord Wagon"の間でマッチングが成功し,?x=?x10として束縛される.
+以下の図5に,このマッチングの様子を示す.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_1.pdf}
+    \caption{CarRule11の後件と仮説のマッチング}
+\end{figure}
+その結果として,CarRule11の前件
+[?x10 is a Honda, ?x10 is stylish, ?x10 has severalcolor models, ?x10 has several seats, ?x10 is a wagon]
+が新たな仮定として導出される.
+これらの仮定が真となれば,元の仮定も真となる. \\
+
+次に,実行例6・7行目においてCarRule7の後件と新たに導出された仮説の一つ"?x10 is a Honda"のマッチングが成功している.
+詳細については以下の図6に示す.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_2.pdf}
+    \caption{CarRule7の後件と仮説のマッチング}
+\end{figure}
+結果として,仮説"?x10 is a Honda"は[?x17 is made in Japan, ?x17 has Honda's logo]に置き換わった. \\
+
+同様にして,実行例8・9行目においても以下の図7のように仮説が置き換わる.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_3.pdf}
+    \caption{CarRule1の後件と仮説のマッチング}
+\end{figure}
+
+次に,10〜12行目において,先ほどのマッチングの結果によって得られた仮説の具体化が行われている.
+すなわち,"?x18 is inexpensive"とワーキングメモリ内のアサーション"his-car is inexpensive"
+が一致することによって,変数?x18=?x17=?x10=?x=his-carとして具体化が得られる.
+以下の図8に具体化の様子を示す.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_4.pdf}
+    \caption{"?x18 is inexpensive"と"his-car is inexpensive"による具体化}
+\end{figure}
+これにより,他の仮説についても?x18=?x17=?x10=?x=his-carとして具体化されたものが,
+ワーキングメモリ内のアサーション集合に存在すれば元の仮説が真となる.
+13行目では,この具体化を受けて仮説"?x17 is made in Japan"が成功したことが示されている. \\
+
+\newpage
+
+しかし,ここで問題が発生する.
+先ほど,?x18=?x17=?x10=?x=his-carによる具体化が得られたが,
+CarRule7により導かれた仮説の一つである"?x17 has Honda's logo"
+について,?x17=his-carとした時のアサーション"his-car has Honda's logo"が存在しないのである.
+したがって,仮説"?x17 has Honda's logo"は偽となり,tmpPointは-1を返すこととなる.
+以下の図9に仮説のマッチングの失敗を図示する.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_5.pdf}
+    \caption{仮説"his-car has Honda's logo"の失敗}
+\end{figure}
+この図から,ワーキングメモリ内に該当アサーション"his-car has Honda's logo"が存在しないことが確認できる.
+これにより,CarRule7により,仮説"?x10 is Honda"を導くことが不可能であることが示された. \\
+
+仮説のチェックの失敗により,一つ前の推論ステップに戻ってCarRule7の代わりとなる新たなルールを探す必要が生じる.
+この一連の処理のことをバックトラックと呼び,先ほどユニフィケーションされた変数束縛は元に戻される.
+すなわち,変数束縛情報は?x10=?xの状態に再び戻る.
+以下の図10,バックトラックの実行を示す.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.40]{images/backward_chaining_6.pdf}
+    \caption{バックトラックの実行}
+\end{figure}
+バックトラックの実行によって,再び仮説"?x10 is a Honda"を真にするような仮説を導出するルールを探すこととなった. \\
+
+\newpage
+
+そして,15・16行目において,CarRule8の後件と"?x10 is a Honda"のパターンマッチングが成功する.
+これについても詳細は以下の図11に示すものとする.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_7.pdf}
+    \caption{CarRule8の後件と仮説のマッチング}
+\end{figure}
+
+同様に,17・18行目でもCarRule1の後件と"?x37 is made in Japan"のマッチングを示す.
+図12を参照する.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_8.pdf}
+    \caption{CarRule1の後件と仮説のマッチング}
+\end{figure}
+
+\newpage
+
+実行例19・20行目でようやく"his-car is inexpensive"と"?x38 is inexpensive"によって具体化が得られる.
+すなわち,?x38=?x37=?x10=?x=his-carが得られる.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_9.pdf}
+    \caption{"his-car is inexpensive"と"?x38 is inexpensive"によるユニフィケーション}
+\end{figure}
+
+先ほどのユニフィケーションの結果を受けて,?x37=his-carとなるので,仮説"?x37 has a VTEC engine"が真となるためには,
+ワーキングメモリ内のアサーション集合に"his-car has a VTEC engine"が含まれれば良い.
+ワーキングメモリ内を確認すると,"his-car has a VTEC engine"は存在するので,この仮説は真である.
+以下,図14に仮説のチェックの過程を示す.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_10.pdf}
+    \caption{"his-car has a VTEC engine"のチェック}
+\end{figure}
+
+\newpage
+
+同様にして,残りの仮説
+[his-car is stylish, his-car has several color models, his-car has several seats, his-car is a wagon]
+についてもワーキングメモリ内を確認するとそれぞれに該当するアサーションが存在するために仮説が真となることが示される.
+以下にこの様子を図15に示す.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.30]{images/backward_chaining_11.pdf}
+    \caption{その他の仮説のチェック}
+\end{figure}
+
+\newpage
+
+以上によって,?x10=his-carとしてユニフィケーションを行うことで,
+CarRule11によって導出された全ての仮説が真となることが示されたので,
+元の仮説,"?x is an Accord Wagon"について,?x=his-carが示された.
+
+この後向き推論の成功例の一連の流れを以下の図16に示す.
+\begin{figure}[!hbt]
+    \centering
+    \includegraphics[scale=0.40]{images/backward_chaining_12.pdf}
+    \caption{後向き推論の成功}
+\end{figure}
+
+\newpage
 
 \subsection{考察}
-セマンティックネットを構築する際に特に注目したのが,is-a関係による特性の継承である.
-\verb|Chrono-Cross  =is-a=>  game| によって下位概念である「Chrono-Cross」から上位概念である「game」が関連付けられ,
-\verb|game  =has-a=>  story| によって「game」に特性が紐づけられる.
-結果として, \verb|Chrono-Cross  =has-a=>  story| が導出される実装から,知識表現とオブジェクト指向プログラミングの親和性の良さを体感した. \\
-セマンティックネットを活用することによって,単純なデータの列挙から新たな知識を導出できることができる. \\
-しかし,知識推論は一般から具体への方向にのみ働くことに注意が必要である.
-
+前向き推論と後向き推論の違いやそれぞれのメリット・デメリットを比較することによって,それぞれの特徴が鮮明になった.
+具体的には,前向き推論では網羅的な知識の獲得がなされ,自動的に知識を導き出すといった点での実用がなされるのではないかと考えられる.
+対照的に,後向き推論では,その効率性の良さから欲しい知識を応答形式で得ることに特化しているように感じられた. \\
+また,前向き推論では,単純な総探索のような形式を取ることによって知識を獲得するので,応答形式を取る際には,あらかじめ下処理として前向き推論を行い,データ検索の際には駆動させない方向で運用すべきであると感じた.
+対して,後ろ向き推論では必ず応答形式による利用となることが考えられるため,あらかじめ質問者がどのような知識をどのような形式で質問可能であるかを知っておく必要がある. \\
+また,利用されない際には前向き推論による下処理を行い,利用時には後向き推論を利用することにより,さらに効率の良いシステムになるのでは無いかと考えた.
+これは,知識量やルールの規模が大きくなるほどに効果を増すのでは無いかと考えられる. \\
+知識システムは,知識の量や範囲によって運用の際に制限が大きいのでは無いかと考えられる上に,データ駆動型のシステムとは異なり,全く新しい知識の発見を行うことができない
+（入力された知識に依存した範囲でのみの限定的なシステム）であるため,実用的には,こうしたアクセシビリティの面でのブラッシュアップを考える必要があると感じた.
 
 % 参考文献
 \begin{thebibliography}{99}
