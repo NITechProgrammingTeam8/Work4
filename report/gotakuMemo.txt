@@ -1,0 +1,85 @@
+[BackwordChainにおいて]
+・質問できる内容(バックさせる対象の仮定)は,後件部の内容じゃないと正しく追えない.
+eg) 
+String str = "?x is a Ferrari F50";
+これはルールの後件部の内容なので,RULEの内容からWMへしっかりとバックトラックできる.
+
+String str = "Ito's-Car is a ?x ?y";
+これはルールの後件部の内容ではないので,RULEの内容に入れず,WMのみ参照する.
+Answer:Ito's-Car is a sports car
+
+		↓ので...
+
+バックの質問にできるのは,あくまでルールの後件部の内容(形)じゃないといけない！
+
+
+・前件部の内容はWMの上から見ていくので,もし同じ文構造をもっているものがあったら,
+前者は反応するが,後者は反応しない(1回成功したらそこで終わるから.)
+eg) WMが以下の内容において,
+Ito's-Car is big
+Ito's-Car needs a lot of gas
+Ito's-Car is a sports car
+Ito's-Car is red
+Ito's-Car has a big engine
+
+String str = "Ito's-Car is ?x";と質問すると,
+/*****
+str = Ito's-Car is ?x
+queries = [Ito's-Car is ?x]
+Hypothesis:[Ito's-Car is ?x]
+Success WM
+Ito's-Car is big <=> Ito's-Car is ?x
+Yes
+{?x=big}
+binding: {?x=big}
+tmp: ?x, result:  Ito's-Car is big
+Query: Ito's-Car is ?x
+Answer:Ito's-Car is big
+*****/
+Answer:Ito's-Car is bigのみ！
+「big」のみで,「red」は返ってこない.
+
+		↓でも...
+
+質問内容の具体化
+「Itoの車は大きいです？」→「Yes or No」...疑問詞は使わない　→ 　いける
+「Itoの車は何色ですか？」→「赤色です」....疑問詞は使うね
+「Itoの車は赤色ですか？」→「Yes or No」....疑問詞は使わない  →  いける
+
+
+・Yes/No返事のための肯定文代入時の出力結果
+/*****
+str = Ito's-Car is big
+queries = [Ito's-Car is big]
+Hypothesis:[Ito's-Car is big]
+Success WM
+Ito's-Car is big <=> Ito's-Car is big
+Yes
+{}
+binding: {}
+Query: Ito's-Car is big
+Answer:Ito's-Car is big
+*****/
+なんか行けそうな気がするww
+
+ちなみに...これ,質問を「str = Ito's-Car is red」にしてもいける
+		
+		↓
+
+Yes/No返事は,たとえ構文がダブってても肯定文内容をWMから参照するからいける！
+
+
+	　　　↓↓↓
+
+[妥協案]
+・文の形は違うものにする
+・同じ文構造(文の形)はあってもいいが,変数の具体化ができるものは1つ(最初にもってくること)
+
+
+・2019/11/15(金)
+str.replace()を使えばいいんじゃない？って思うけど...
+→それだと順番に対応できないんっすよね！
+eg)
+「Taro's-Car is big」に対して「Is Taro's-Car big ?」が聞きたいでしょ！
+順番入れ替えるのがいいよね！やっぱり！
+
