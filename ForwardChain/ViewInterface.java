@@ -5,6 +5,8 @@ interface ViewInterface {
     void successStart();
     // 更新データ再読み込み完了メソッド
     void successRestart();
+    // 推論順に探索結果返却完了メソッド
+    ArrayList<StepResult> showStepResult(ArrayList<StepResult> stepresults);
 	// ルール追加完了メソッド(void？)
 	boolean successAddRule(boolean result);
 	// ルール削除完了メソッド(void？)

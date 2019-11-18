@@ -1,13 +1,19 @@
 import java.util.ArrayList;
 
+// Viewの使用方法検討
+
 class View implements ViewInterface {
 	// 初期データ読み込み完了メソッド
     public void successStart() {
     	System.out.println("Successfully started");
     }
- // 更新データ再読み込み完了メソッド
+    // 更新データ再読み込み完了メソッド
     public void successRestart() {
     	System.out.println("Successfully restarted");
+    }
+    // 推論順に探索結果返却メソッド
+    public ArrayList<StepResult> showStepResult(ArrayList<StepResult> stepresults) {
+    	return stepresults;
     }
 	// ルール追加完了メソッド(void？)
  	public boolean successAddRule(boolean result) {

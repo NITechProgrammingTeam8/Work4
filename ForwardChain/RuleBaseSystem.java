@@ -38,7 +38,7 @@ public class RuleBaseSystem {
     }
 
     // 再試行＆再構築
-    public void restart(ArrayList<Assertion> assertions, ArrayList<Rule> rules) {
+    public void restart(ArrayList<String> assertions, ArrayList<Rule> rules) {
     	rb = new RuleBase(assertions, rules);
     	rb.forwardChain();
     }
@@ -52,6 +52,11 @@ public class RuleBaseSystem {
     public ArrayList<Assertion> getAssertions() {
     	return rb.getWorkingMemory().getAssertions();
     }
+
+    // 推論順に探索結果返却
+    public ArrayList<StepResult> getStepResults() {
+    	return rb.getStepResults();
+    }
 }
 
 /**
@@ -60,12 +65,13 @@ public class RuleBaseSystem {
  *
  */
 class WorkingMemory {
-    //ArrayList<String> assertions;
     ArrayList<Assertion> assertions;
+    ArrayList<Assertion> add;
+    Assertion assertion;
 
     WorkingMemory(){
-        //assertions = new ArrayList<String>();
         assertions = new ArrayList<Assertion>();
+        add = new ArrayList<>();
     }
 
     /**
@@ -77,7 +83,12 @@ class WorkingMemory {
      */
     public ArrayList matchingAssertions(ArrayList<String> theAntecedents){
         ArrayList bindings = new ArrayList();
-        return matchable(theAntecedents,0,bindings);
+        add = new ArrayList<>();
+        ArrayList result = matchable(theAntecedents,0,bindings);
+        if (result == null) {
+        	add = new ArrayList<>();
+        }
+        return result;
     }
 
     private ArrayList matchable(ArrayList<String> theAntecedents,int n,ArrayList bindings){
@@ -93,6 +104,7 @@ class WorkingMemory {
                     binding)){
                     bindings.add(binding);
                     success = true;
+                    add.add(assertions.get(i));
                 }
             }
             if(success){
@@ -111,6 +123,7 @@ class WorkingMemory {
                         (HashMap)bindings.get(i))){
                         newBindings.add(bindings.get(i));
                         success = true;
+                        add.add(assertions.get(j));
                     }
                 }
             }
@@ -129,12 +142,8 @@ class WorkingMemory {
      */
     public void addAssertion(String theAssertion){
         System.out.println("ADD:"+theAssertion);
-        assertions.add(new Assertion(theAssertion));
-        /*
-        for (Assertion assertion : assertions) {
-        	System.out.println(assertion.getName() + "◆" + assertion.getId());
-        }
-        */
+        assertion = new Assertion(theAssertion);
+        assertions.add(assertion);
     }
 
     /**
@@ -164,13 +173,18 @@ class WorkingMemory {
      * @return    ワーキングメモリの情報を表す String
      */
     public String toString(){
-        return assertions.toString(); // 恐らく使用できない
+        return assertions.toString();
     }
 
     public ArrayList<Assertion> getAssertions() {
     	return assertions;
     }
-
+    public ArrayList<Assertion> getAdd() {
+    	return add;
+    }
+    public Assertion getSuccess() {
+    	return assertion;
+    }
 }
 
 /**
@@ -184,35 +198,41 @@ class RuleBase {
     StreamTokenizer st;
     WorkingMemory wm;
     ArrayList<Rule> rules;
+    StepResult sr;
+    ArrayList<StepResult> srs;
+    ArrayList<Assertion> add;
+    ArrayList<Rule> apply;
+    Assertion success;
+    WorkingMemory cash;
+    Rule applyUnit;
 
     RuleBase(ArrayList<String> firstAssertions, String fileName){
-        //fileName = "CarShop.data";
         wm = new WorkingMemory();
-        //wm.addAssertion("my-car is inexpensive");
-        //wm.addAssertion("my-car has a VTEC engine");
-        //wm.addAssertion("my-car is stylish");
-        //wm.addAssertion("my-car has several color models");
-        //wm.addAssertion("my-car has several seats");
-        //wm.addAssertion("my-car is a wagon");
         for (String firstAssertion : firstAssertions) {
         	wm.addAssertion(firstAssertion);
         }
         rules = new ArrayList<Rule>();
         loadRules(fileName);
+        srs = new ArrayList<StepResult>();
+        add = new ArrayList<>();
+        apply = new ArrayList<>();
+        cash = new WorkingMemory();
+        applyUnit = null;
     }
-
-    RuleBase(ArrayList<Assertion> assertions, ArrayList<Rule> rules) {
-    	this.rules = rules;
-    	// 必要性はあるのか
-    	for(int i = 0 ; i < rules.size() ; i++){
-            System.out.println("【再】" + ((Rule)rules.get(i)).toString() + "♪" + rules.get(i).getId());
-        }
+    RuleBase(ArrayList<String> assertions, ArrayList<Rule> rules) {
     	wm = new WorkingMemory();
-    	// 冗長的か
-    	for (Assertion assertion : assertions) {
-    		System.out.print("【再】");
-    		wm.addAssertion(assertion.getName());
-    	}
+    	for (String assertion : assertions) {
+        	wm.addAssertion(assertion);
+        }
+    	this.rules = rules;
+    	for(int i = 0 ; i < rules.size() ; i++){
+            System.out.println(((Rule)rules.get(i)).toString());
+        }
+    	srs = new ArrayList<StepResult>();
+        add = new ArrayList<>();
+        apply = new ArrayList<>();
+        cash = new WorkingMemory();
+        applyUnit = null;
     }
 
     /**
@@ -226,8 +246,8 @@ class RuleBase {
             newAssertionCreated = false;
             for(int i = 0 ; i < rules.size(); i++){
                 Rule aRule = (Rule)rules.get(i);
-                //System.out.println("apply rule:"+aRule.getName());
-                System.out.println("apply rule:"+aRule.getName()+" rule number☆"+aRule.getId()); // 【仮追加】
+                System.out.println("apply rule:"+aRule.getName());
+                apply.add(aRule);
                 ArrayList<String> antecedents = aRule.getAntecedents();
                 String consequent  = aRule.getConsequent();
                 //HashMap bindings = wm.matchingAssertions(antecedents);
@@ -240,10 +260,16 @@ class RuleBase {
                                         (HashMap)bindings.get(j));
                         //ワーキングメモリーになければ成功
                         if(!wm.contains(newAssertion)){
-                            //System.out.println("Success: "+newAssertion);
-                        	// まだ追加してないので、数字として正しいものは出てこない
-                            System.out.println("Success: "+newAssertion+" assertion number★"+aRule.getId()); // 【仮追加】
+                            System.out.println("Success: "+newAssertion);
+                            add = wm.getAdd();
                             wm.addAssertion(newAssertion);
+                            success = wm.getSuccess();
+                            applyUnit = apply.get(apply.size() - 1);
+                            sr = new StepResult(add, applyUnit, success);
+                            srs.add( sr );
+                            apply = new ArrayList<>();
+                            applyUnit = null;
+                            success = null;
                             newAssertionCreated = true;
                         }
                     }
@@ -251,6 +277,11 @@ class RuleBase {
             }
             //System.out.println("Working Memory"+wm);
             System.out.println("Working Memory"+printWorkingMemory(wm));
+            if (wm != cash) {
+            	apply = new ArrayList<>();
+            	cash = new WorkingMemory();
+                cash = wm;
+            }
         } while(newAssertionCreated);
         System.out.println("No rule produces a new assertion");
     }
@@ -264,11 +295,6 @@ class RuleBase {
     		buf.append(", ");
     	}
     	buf.append(wmA.get(wmA.size()-1).getName());
-    	/*
-    	for (Assertion assertion : wmA) {
-    		buf.append(assertion.getName());
-    	}
-    	*/
     	buf.append("]");
     	return buf.toString();
     }
@@ -335,8 +361,7 @@ class RuleBase {
             System.out.println(e);
         }
         for(int i = 0 ; i < rules.size() ; i++){
-        	//System.out.println(((Rule)rules.get(i)).toString());
-            System.out.println(((Rule)rules.get(i)).toString() + "♪" + rules.get(i).getId());
+        	System.out.println(((Rule)rules.get(i)).toString());
         }
     }
 
@@ -346,6 +371,10 @@ class RuleBase {
 
     public WorkingMemory getWorkingMemory() {
     	return wm;
+    }
+
+    public ArrayList<StepResult> getStepResults() {
+    	return srs;
     }
 }
 
@@ -445,6 +474,52 @@ class Assertion {
      */
     public int getId(){
         return id;
+    }
+}
+
+/**
+ * 各ステップごとの結果を表すクラス．
+ *
+ *
+ */
+class StepResult {
+	//static int counter = 0;
+	//int id;
+	private ArrayList<Assertion> add;
+	private Rule apply;
+	private Assertion success;
+
+	StepResult(ArrayList<Assertion> theAdd, Rule theApply, Assertion theSuccess){
+        this.add = theAdd;
+        this.apply = theApply;
+        this.success = theSuccess;
+    }
+
+	/**
+     * アサーションをArrayList形式で返す．
+     *
+     * @return    本体を表す ArrayList<Assertion>
+     */
+    public ArrayList<Assertion> getAdd(){
+        return add;
+    }
+
+	/**
+     * ルールをArrayList形式で返す．
+     *
+     * @return    本体を表す ArrayList<Rule>
+     */
+    public Rule getApply(){
+        return apply;
+    }
+
+	/**
+     * アサーションをAssertion形式で返す．
+     *
+     * @return    本体を表す Assertion
+     */
+    public Assertion getSuccess(){
+        return success;
     }
 }
 
