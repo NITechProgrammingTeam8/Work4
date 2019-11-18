@@ -24,57 +24,129 @@ public class FwdChainGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         fct = new FwdChainTable();
-        JPanel mainPanel = fct;
-        JPanel menuPanel = new MenuPanel();
-        status = new JLabel();
+        JPanel mainPnl = fct;
+        JPanel menuPnl = new MenuPanel();
 
         Container contentPane = getContentPane();
-        contentPane.add(mainPanel, BorderLayout.CENTER);
-        contentPane.add(menuPanel, BorderLayout.NORTH);
-        contentPane.add(status, BorderLayout.SOUTH);
+        contentPane.add(mainPnl, BorderLayout.CENTER);
+        contentPane.add(menuPnl, BorderLayout.WEST);
     }
 
     class MenuPanel extends JPanel implements ActionListener {
-        JTextField text;
+        JTextField schWords;
+        List<Rule> ruleList;
+        DefaultListModel ruleMod;
+        JList rulePnl;
+        JLabel status;
 
         MenuPanel() {
-            text = new JTextField(30);
-            JButton[] btns = new JButton[3];
-            btns[0] = new JButton("検索");
-            btns[1] = new JButton("追加");
-            btns[2] = new JButton("削除");
+            addWindowListener(new WindowAdapter() {
+                public void windowOpened(WindowEvent e) {
+                    ruleList = fct.getRules();
+                    for (Rule r : ruleList) {
+                        ruleMod.addElement(r);
+                    }
+                }
+            });
+            JPanel schPnl = new JPanel();
 
-            add(text);
-            for (JButton b : btns) {
-                add(b);
-                b.addActionListener(this);
-            }
+            schWords = new JTextArea(30);
+
+            JButton schBtn = new JButton("検索");
+            schBtn.addActionListener(this);
+
+            schPnl.add(schWords);
+            schPnl.add(schBtn);
+
+            JPanel editPnl = new JPanel();
+
+            ruleMod = new DefaultListModel();
+            rulePnl = new JList(ruleMod);
+            JScrollPane ruleList = new JScrollPane();
+            ruleSp.getViewport().setView(rulPnl);
+            ruleSp.setPreferredSize(new Dimension(200, 300));
+
+            JPanel btnPnl = new JPanel();
+            JButton addBtn = new JButton("追加");
+            addBtn.addActionListener(this);
+            btnPnl.add(addBtn);
+            JButton rmBtn = new JButton("削除");
+            delBtn.addActionListener(this);
+            btnPnl.add(delBtn);
+            JButton udBtn = new JButton("更新");
+            udBtn.addActionListener(this);
+            btnPnl.add(udBtn);
+
+            editPnl.add(btnPnl);
+
+            status = new JLabel();
+            Container contentPane = getContentPane();
+            contentPane.add(schPnl, BorderLayout.NORTH);
+            contentPane.add(editPnl, BorderLayout.CENTER);
+            contentPane.add(status, BorderLayout.SOUTH);
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
             String cmd = e.getActionCommand();
-            String arg = text.getText();
 
-            String param = "実行";
+            String param = "失敗";
             if (cmd.equals("検索")) {
-                String result = rMap.searchNode(arg).toString();
-                status.setText(cmd + "の" + param + ": " + arg + " => " + result);
+                String[] arg = schWords.getText().split("¥n");
+                ArrayList<Assertion> astList = new ArrayList<>();
+                for (String s : arg) {
+                    astList.add(new Assertion(s));
+                }
+                fct.schNode(astList);
+                param = "実行";
             } else {
                 if (cmd.equals("追加")) {
-                    if (rMap.addLink(arg)) {
+                    Rule r = new Rule(   );
+                    if (fct.addRule(val)) {
+                        ruleMod.addElement(r);
                         param = "成功";
-                    } else {
-                        param = "失敗";
                     }
                 } else if (cmd.equals("削除")) {
-                    if (rMap.removeLink(arg)) {
-                        param = "成功";
+                    if (!listPanel.isSelectionEmpty()) {
+                        int index = listPnl.getSelectedIndex();
+                        Rule val = (Rule) listPnl.getSelectedValue();
+                        if (fct.rmRule(val)) {
+                            ruleMod.remove(index);
+                            param = "成功";
+                        }
                     } else {
-                        param = "失敗";
+                        System.out.println("削除失敗（未選択のため）");
+                    }
+                } else if (cmd.equals("更新")) {
+                    if (!listPanel.isSelectionEmpty()) {
+                        int index = listPnl.getSelectedIndex();
+                        Rule val = (Rule) listPnl.getSelectedValue();
+
+                        // 更新処理
+
+                        if (fct.udRule(val, , , )) {
+                            ruleMod.remove(index);  // 消さずに更新できないか？
+                            ruleMod.addElement(r);
+                            param = "成功";
+                        }
+                    } else {
+                        System.out.println("更新失敗（未選択のため）");
                     }
                 }
-                status.setText(cmd + "の" + param + ": " + arg);
+            }
+            status.setText(cmd + "の" + param);
+        }
+
+        public class myListener extends WindowAdapter {
+            public void windowOpened(WindowEvent e) {
+                view = new View();
+                presenter = new Presenter(view);
+                presenter.start();
+                presenter.fetchData();
+                textList = view.getRl();
+                for (TextModel text : textList) {
+                    lModel.addElement(text);
+                }
             }
         }
     }
@@ -82,20 +154,20 @@ public class FwdChainGUI extends JFrame {
 
 class FwdChainTable extends JPanel {
     View view;
-    Presenter presenter;
+    Presenter pres;
     ArrayList<Assertion> astList;
 
     FwdChainTable(String fileName) {
         view = new View();
-        pst = new Presenter(view);
+        pres = new Presenter(view);
         astList = new ArrayList<>();  // 検索時はこれに入れる．前向き推論では初期値は要素なし．
-        pst.start(astList, "CarShop.data");
+        pres.start(astList, "CarShop.data");
 
         SpringLayout layout = new SpringLayout();  // GridBagLayoutの方がいいかも
         setLayout(layout);
 
         ArrayList<Node> nodeList = new ArrayList<>();
-        for (entry:  pst.getResults()) {  // どう渡される？
+        for (entry:  pres.getResults()) {  // どう渡される？
             Node n = new Node(rule, ast);  // presenterに引数を合わせる
             
             // layout.putConstraint(, , , , );
@@ -107,9 +179,16 @@ class FwdChainTable extends JPanel {
         }
     }
 
-    ArrayList searchNode(String text) {
-        return ad.searchNaturalData(text);
+    ArrayList<Rule> getRules() {
+        pres.getRules();  // 合わせる
+        return view.showRuleList();
     }
+
+    void schNode(ArrayList<Assertion> astList); // 再描写
+
+    boolean rmRule(Rule rule);
+
+    boolean udRule(Rule rule, String , ArrayList<String> , String );
 }
 
 class Node extends JPanel {
