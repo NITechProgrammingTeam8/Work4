@@ -4,7 +4,7 @@ import java.util.*;
 import com.google.gson.*;
 import com.squareup.okhttp.*;
 
-class ApiTest {
+public class ApiTest {
 
     public static void main(String[] args) {
         try {
