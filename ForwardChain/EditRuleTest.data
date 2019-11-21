@@ -1,5 +1,7 @@
 rule	"TestRule1"
 if	"?x is a professor"
 	"?x has a toralab"
-	"?x likes Mr. Ozono"
+then	"?x is Mr. Shintani"
+rule	"TestRule2"
+if	"?x is a elderly-man"
 then	"?x is Mr. Shintani"
