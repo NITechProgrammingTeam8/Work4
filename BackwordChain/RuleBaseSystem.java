@@ -430,7 +430,8 @@ class RuleBase implements Serializable{
                 }
             }
             // 後件の出力
-            writer.println("then	\"" + rule.getConsequent() + "\"");
+			writer.println("then	\"" + rule.getConsequent() + "\"");
+			writer.println();
         }
         writer.close();
     }

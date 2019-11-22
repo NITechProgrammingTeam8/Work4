@@ -468,6 +468,82 @@ CarRule11によって導出された全ての仮説が真となることが示�
 知識システムは,知識の量や範囲によって運用の際に制限が大きいのでは無いかと考えられる上に,データ駆動型のシステムとは異なり,全く新しい知識の発見を行うことができない
 （入力された知識に依存した範囲でのみの限定的なシステム）であるため,実用的には,こうしたアクセシビリティの面でのブラッシュアップを考える必要があると感じた.
 
+
+\section{発展課題4-4}
+\begin{screen}
+    上記4-3で実装したGUIを発展させ,質問応答だけでなく,ルールの編集（追加,削除,変更）などについてもGUIで行えるようにせよ.
+\end{screen}
+\subsection{手法}
+ルールの編集を実装するために,内部処理として二つの段階に処理を分割する.
+まず,ルールベース内のルール集合への編集作業を行う.
+その次に,変更されたルールベースの内容を,データファイルに上書きする処理を行う.
+以上の手順に沿って,実装を行う.
+
+\subsection{実装}
+ルールの編集を実装するために,RuleBaseクラス内部に4つのメソッドを新たに追加した. \\
+
+まず,ルールベース内のルールを編集する処理を行うメソッドを作成する.
+今回, ルールの編集には,追加,削除,変更の3つが存在するので,それぞれに対応したメソッドを作成する必要がある.
+以下に,今回作成した3つのメソッドとその説明を示す.
+\begin{description}
+    \item[insertRule()] 引数で指定されたルールをルールベースに追加する.
+    \item[deleteRule()] 引数で指定されたルールをルールベースから削除する.
+    \item[updateRule()] 引数で指定されたルールを変更する.
+\end{description}
+以上のメソッドによって,ルールベース内部のルール集合に対しての操作がなされる. \\
+
+次に,変更後のルールベースの内容をデータファイルに反映するメソッドwriteFile()を定義する.
+このメソッドは,上記の3つのメソッドから共通で利用されるものとする. \\
+
+以上によって,ルールの編集を行う内部実装を行った.
+
+\subsection{実行例}
+私（増田）は,ルールの追加・削除・変更を行う実装を担当したため,CUI上での実行結果を示す.
+まずは,元のデータファイルを以下に示す.
+\begin{lstlisting}[caption=初期のEditRuleTest.data, label=mid]
+rule 	"CarRule10"
+if 	"?x is a Toyota"
+    "?x has several seats"
+    "?x is a hybrid car"
+then	"?x is a Prius"
+\end{lstlisting}
+次に,ルールCarRule2を追加する処理を行った際のデータファイルを示す.
+\begin{lstlisting}[caption=ルール追加後のEditRuleTest.data, label=mid]
+rule	"CarRule10"
+if	"?x is a Toyota"
+	"?x has several seats"
+	"?x is a hybrid car"
+then	"?x is a Prius"
+
+rule	"CarRule2"
+if	"?x is small"
+then	"?x is made in Japan"
+\end{lstlisting}
+続いて,先ほど追加したルールCarRule2を削除したデータファイルを示す.
+\begin{lstlisting}[caption=ルール削除後のEditRuleTest.data, label=mid]
+rule	"CarRule10"
+if	"?x is a Toyota"
+    "?x has several seats"
+    "?x is a hybrid car"
+then	"?x is a Prius"
+\end{lstlisting}
+最後に,ルールcarRule10を変更するプログラムを実行した結果を示す.
+ただし,二番目の前件を削除する変更を行うとする.
+\begin{lstlisting}[caption=ルール変更後のEditRuleTest.data, label=mid]
+rule	"CarRule10"
+if	"?x is a Toyota"
+	"?x has several seats"
+then	"?x is a Prius"
+\end{lstlisting}
+
+\subsection{考察}
+ルールの編集を実装するに当たって2通りの実装方法を考案した.
+一つ目の手法は,上述した通り,ルールベース内部のルール集合への編集を行い,操作後のルールベースの内容をデータファイルに上書きする手法である.
+二つ目の手法は,データファイルを直接編集することによって,ルールを更新し,再び読み込んでルールベースを構築する手法である.
+そこで,データファイルを直接変更することは複雑かつ非効率であるのに対して,
+ルールベース内部のルール集合を直接編集する方が容易であると考えたため,前者を選ぶこととした. \\
+また,処理を二段階に切り分けることによって,同様の処理をwriteFile()メソッドに統合し,機能の差分をそれぞれ3つのメソッドに任せることで柔軟な構成を作ることができたと考えている.
+
 % 参考文献
 \begin{thebibliography}{99}
 \bibitem{notty} Javaによる知能プログラミング入門 --著：新谷 虎松 \\

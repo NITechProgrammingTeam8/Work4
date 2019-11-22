@@ -5,27 +5,27 @@ import java.util.ArrayList;
 // 使用しない
 public class EditRuleTest {
     public static void main(String[] args) {
-        String ruleName = "TestRule1";
+        String ruleName = "CarRule10";
         ArrayList<String> antecedents = new ArrayList();
-        antecedents.add("?x is a professor");
-        antecedents.add("?x has a toralab");
-        antecedents.add("?x likes Mr. Ozono");
-        String consequent = "?x is Mr. Shintani";
+        antecedents.add("?x is a Toyota");
+        antecedents.add("?x has several seats");
+        antecedents.add("?x is a hybrid car");
+        String consequent = "?x is a Prius";
         Rule rule = new Rule(ruleName, antecedents, consequent);
         ArrayList<Rule> rules = new ArrayList();
         rules.add(rule);
         EditRule editRule = new EditRule("EditRuleTest.data", rules);
 
         // ルール挿入テスト
-        String insertRuleName = "TestRule2";
+        String insertRuleName = "CarRule2";
         ArrayList<String> insertAntecedents = new ArrayList();
-        insertAntecedents.add("?x is a elderly-man");
-        String insertConsequent = "?x is Mr. Shintani";
+        insertAntecedents.add("?x is small");
+        String insertConsequent = "?x is made in Japan";
         Rule insertRule = new Rule(insertRuleName, insertAntecedents, insertConsequent);
         editRule.insertRule(insertRule);
 
         // ルール削除テスト
-        editRule.deleteRule(rule);
+        editRule.deleteRule(insertRule);
 
         // ルール更新テスト
         antecedents.remove(2);
