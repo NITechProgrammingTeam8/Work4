@@ -1,7 +1,12 @@
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.StringTokenizer;
 
 /**
@@ -12,6 +17,9 @@ public class RuleBaseSystem {
 	static RuleBase rb;
     static ArrayList<String> firstAssertions;
     static String fileName;
+    static boolean question;
+    ArrayList<String> answer;
+
 	// コンストラクタ
 	RuleBaseSystem () {
 		//RuleBase rb;
@@ -33,14 +41,32 @@ public class RuleBaseSystem {
     // ここで全クラス＆メソッドを管理
     public void start(ArrayList<String> firstAssertions, String fileName) {
     	//System.out.println("仮");
+    	RuleBaseSystem.question = false;
     	rb = new RuleBase(firstAssertions, fileName);
         rb.forwardChain();
+        RuleBaseSystem.fileName = fileName;
     }
 
     // 再試行＆再構築
     public void restart(ArrayList<String> assertions, ArrayList<Rule> rules) {
+    	RuleBaseSystem.question = false;
     	rb = new RuleBase(assertions, rules);
     	rb.forwardChain();
+    }
+
+    // ルールの追加
+    public boolean addRule(String newRuleName, ArrayList<String> newRuleAntecedents, String newRuleConsequent) {
+    	return rb.insertRule( new Rule(newRuleName, newRuleAntecedents, newRuleConsequent) );
+    }
+
+    // ルールの削除
+    public boolean deleteRule(Rule targetRule) {
+    	return rb.deleteRule(targetRule);
+    }
+
+    // ルールの更新
+    public boolean updateRule(Rule targetRule) {
+    	return rb.updateRule(targetRule);
     }
 
     // 更新済みルールの取得
@@ -48,7 +74,7 @@ public class RuleBaseSystem {
     	return rb.getRules();
     }
 
-    // 更新済みアサーションの取得
+    // 更新済みアサーションの取得 // 多分要らない
     public ArrayList<Assertion> getAssertions() {
     	return rb.getWorkingMemory().getAssertions();
     }
@@ -57,6 +83,223 @@ public class RuleBaseSystem {
     public ArrayList<StepResult> getStepResults() {
     	return rb.getStepResults();
     }
+
+    // 検索を行い結果を返す(複数検索の場合は改良)
+    public ArrayList<String> searchAssertion(String target) {
+		RuleBaseSystem.question = true;
+		answer = new ArrayList<>();
+    	NaturalLanguage(target);
+		Matcher.answer = new ArrayList<>();
+		return answer;
+    }
+
+    /***
+	 *	NaturalLanguageメソッド
+	 *	引数 : 英語における自然言語の質問文「What is an Accord Wagon ?」
+	 *  return: 変数を含むパターン 「?x is an Accord Wagon」
+	 *  に置き換える
+	 */
+	public void NaturalLanguage(String equestion) {
+		/***
+		 *	1. "英語の質問:s"を"変数含むパターン"に置き換える
+		 *	2. その"変数を含むパターン"を解析する:rb.backwardChain()を実行
+		 */
+		//解
+		ArrayList<String> tokenList = new ArrayList<>();
+		//今どこを指しているか
+		int tokenPoint = 0;
+
+		//前処理
+		/**
+		 * 「What color is his car?」と
+		 * 「What color is Ito's car?」の違いをしっかりいきたい!
+		 */
+		if(equestion.contains("'s c")) {
+			equestion = equestion.replace("'s c", "'s-C");
+		}
+		else if(equestion.contains("his")) {
+			equestion = equestion.replace("his c", "his-c");
+		}
+		else if(equestion.contains("my")) {
+			equestion = equestion.replace("my c", "my-c");
+		}
+
+		//1.まずはトークンに分解して,
+		StringTokenizer stoken = new StringTokenizer(equestion);
+		//  トークンの数を保存
+		int tokenSize = stoken.countTokens() - 1;	//最後の?は除くからね！
+
+		//2.いろいろいじって,
+		/***
+		 *  注意1)今回は前回と違って,3つ(Head,Tail,Label)に当てはめればいいわけじゃないから
+		 *  注意2)aかanかだいぶ変わるな
+		 */
+		String firstToken = stoken.nextToken();
+		tokenPoint ++;
+		String secondToken = stoken.nextToken();
+		tokenPoint ++;
+		if(firstToken.equals("Is")) {
+			tokenList.add(secondToken);
+			tokenList.add("is");
+		}
+		else if(firstToken.equals("What")) {
+			//rb.qFlag = 1;
+			if(secondToken.equals("color")) {
+				String thirdToken = stoken.nextToken();
+				tokenPoint ++;
+				tokenList.add(stoken.nextToken());
+				tokenPoint ++;
+				tokenList.add(thirdToken);
+				tokenList.add(" ?x");
+			}
+			else if(secondToken.equals("does")) {
+				tokenList.add(stoken.nextToken());
+				tokenPoint ++;
+				String thirdToken = stoken.nextToken();
+				tokenPoint ++;
+
+				//三単現のsの処理
+				//System.out.println("thirdToken = " + thirdToken);
+				//String thirdToken3s = thirdToken.substring(thirdToken.length()-1);
+				//System.out.println("thirdToken3s = " + thirdToken3s);
+
+				if(thirdToken.equals("have")) {
+					tokenList.add("has");
+				}
+				tokenList.add("?x");
+			}
+			else if(secondToken.equals("is")) {
+				tokenList.add("?x");
+				tokenList.add("is");
+			}
+		}
+		else if(firstToken.equals("Does")) {
+			String thirdToken = stoken.nextToken();
+			tokenPoint ++;
+
+			//三単現のsの処理
+			/*	三人称単数じゃなのは...
+			 *  1人称... I, We
+			 *  2人称... You
+			 *  3人称... They
+			 *
+			 **/
+			//System.out.println("secondToken = " + secondToken);
+			String s = secondToken.substring(secondToken.length()-1);
+			//System.out.println("s = " + s);
+
+			if(thirdToken.equals("have") & !s.equals("s")) {		//んんん～～
+				thirdToken = "has";
+			}
+			else {
+				thirdToken = thirdToken.replace(thirdToken, thirdToken+"s");
+			}
+			tokenList.add(secondToken);
+			tokenList.add(thirdToken);
+		}
+
+		//3.toStringで最後に合体させる(今回はあくまでStrigの文字列にしないといけないのだ.)
+		//  格納
+		for(int i = tokenPoint; i < tokenSize; i++) {
+			tokenList.add(stoken.nextToken());
+		}
+		//  ArrayList → String文字へ
+		String patarn = tokenList.toString();
+		patarn = patarn.replace("[", "");
+		patarn = patarn.replace("]", "");
+		patarn = patarn.replace(",", "");
+		//str = str.replace(" ?", "");	//ここで処理すると変数「?x」の?も消えちゃう
+		//System.out.println("patarn = " + patarn);
+
+
+		//String patarn = "Ito's-Car is ?x";	//前件文の内容「RULEの後件部にないから,WMから見る」
+		//String patarn = "?x is a Ferrari F50";		//後件文の内容「RULEを見て,WMを見る」
+
+
+		/*(注意)
+		 *	Yes/No返事のときは, そのままでいいんだけど,
+		 *  「my-car has ?x」のときに, 「?x= a VTEC engine」とかできなんすよね...
+		 *  ので, Whatの場合は別にしないといけない
+		 */
+
+		//whatの場合
+		if(patarn.contains("?x")) {
+
+			ArrayList<String> newWorkingMemory = new ArrayList<>();
+
+			for(int i = 0; i < rb.wm.memorySize(); i ++) {
+				ArrayList<String> newAssertion = new ArrayList<>();
+				StringTokenizer wmtoken = new StringTokenizer(rb.wm.getValue(i));
+
+				String wmfirstToken = wmtoken.nextToken();
+				newAssertion.add(wmfirstToken);
+
+				String wmsecondToken = wmtoken.nextToken();
+				String wmthirdToken = wmtoken.nextToken();
+				if(wmsecondToken.equals("is") && wmthirdToken.equals("a")) {
+					newAssertion.add("is-a");
+				}
+				else if(wmsecondToken.equals("is") && wmthirdToken.equals("an")) {
+					newAssertion.add("is-an");
+				}
+				else if(wmsecondToken.equals("has") && wmthirdToken.equals("a")) {
+					newAssertion.add("has-a");
+				}
+				else if(wmsecondToken.equals("has") && wmthirdToken.equals("an")) {
+					newAssertion.add("has-an");
+				}
+				else if(wmthirdToken.equals("several")) {
+					newAssertion.add(wmsecondToken);
+				}
+				else {
+					newAssertion.add(wmsecondToken);
+					newAssertion.add(wmthirdToken);
+				}
+
+				//System.out.println("残りトークンの数 = " + wmtoken.countTokens());
+				if(wmtoken.countTokens() > 1) {
+					String wmforthToken = wmtoken.nextToken();
+					String wmfifthToken = wmtoken.nextToken();
+					newAssertion.add(wmforthToken + "-" + wmfifthToken);
+				}
+				else if(wmtoken.countTokens() == 1){
+					newAssertion.add(wmtoken.nextToken());
+				}
+
+				//System.out.println("newAssertion = " + newAssertion);
+				//  ArrayList → String文字へ
+				String stringAssertion = newAssertion.toString();
+				stringAssertion = stringAssertion.replace("[", "");
+				stringAssertion = stringAssertion.replace("]", "");
+				stringAssertion = stringAssertion.replace(",", "");
+				//System.out.println("stringAssertion = " + stringAssertion);
+				newWorkingMemory.add(stringAssertion);
+			}
+			//System.out.println("newWorkingMemory = " + newWorkingMemory);
+
+			//解析
+			for(int i = 0; i < newWorkingMemory.size(); i++) {
+				(new Matcher()).matching(patarn, newWorkingMemory.get(i));
+				answer = Matcher.answer;
+			}
+		}
+
+		else {
+			//解析
+			boolean flag = false;
+			for(int i = 0; i < rb.wm.memorySize(); i ++) {
+				if((new Matcher()).matching(patarn, rb.wm.getValue(i))) {
+					//System.out.println("答え = Yes");
+					answer.add("Yes");
+					flag = true;
+				}
+			}
+			if(!flag) {
+				//System.out.println("答え = No");
+				answer.add("No");
+			}
+		}
+	}
 }
 
 /**
@@ -74,6 +317,16 @@ class WorkingMemory {
         add = new ArrayList<>();
     }
 
+    //WMの数を取得
+    public int memorySize() {
+    	return assertions.size();
+    }
+
+    //WMの要素を取得
+    public String getValue(int i) {
+    	return assertions.get(i).getName();
+    }
+
     /**
      * マッチするアサーションに対するバインディング情報を返す
      * （再帰的）
@@ -89,6 +342,7 @@ class WorkingMemory {
         	add = new ArrayList<>();
         }
         return result;
+        //return matchable(theAntecedents,0,bindings);
     }
 
     private ArrayList matchable(ArrayList<String> theAntecedents,int n,ArrayList bindings){
@@ -142,8 +396,10 @@ class WorkingMemory {
      */
     public void addAssertion(String theAssertion){
         System.out.println("ADD:"+theAssertion);
+        //assertions.add(new Assertion(theAssertion));
         assertion = new Assertion(theAssertion);
         assertions.add(assertion);
+        //add.add(assertion);
     }
 
     /**
@@ -173,15 +429,17 @@ class WorkingMemory {
      * @return    ワーキングメモリの情報を表す String
      */
     public String toString(){
-        return assertions.toString();
+        return assertions.toString(); // 恐らく使用できない
     }
 
     public ArrayList<Assertion> getAssertions() {
     	return assertions;
     }
+
     public ArrayList<Assertion> getAdd() {
     	return add;
     }
+
     public Assertion getSuccess() {
     	return assertion;
     }
@@ -219,6 +477,7 @@ class RuleBase {
         cash = new WorkingMemory();
         applyUnit = null;
     }
+
     RuleBase(ArrayList<String> assertions, ArrayList<Rule> rules) {
     	wm = new WorkingMemory();
     	for (String assertion : assertions) {
@@ -275,7 +534,6 @@ class RuleBase {
                     }
                 }
             }
-            //System.out.println("Working Memory"+wm);
             System.out.println("Working Memory"+printWorkingMemory(wm));
             if (wm != cash) {
             	apply = new ArrayList<>();
@@ -375,6 +633,76 @@ class RuleBase {
 
     public ArrayList<StepResult> getStepResults() {
     	return srs;
+    }
+
+    // データ挿入用メソッド
+    public boolean insertRule(Rule targetRule) {
+    	boolean add = true;
+        rules.add(targetRule);
+        try {
+            writeFile();
+        } catch(IOException e) {
+        	add = false;
+            System.out.println(e.toString());
+        }
+        return add;
+    }
+
+    // データ削除用メソッド
+    public boolean deleteRule(Rule targetRule) {
+    	boolean delete = true;
+        for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
+            if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
+                rules.remove(ruleNum);
+            }
+        }
+        try {
+            writeFile();
+        } catch(IOException e) {
+        	delete = false;
+            System.out.println(e.toString());
+        }
+        return delete;
+    }
+
+    // データ更新用メソッド
+    public boolean updateRule(Rule targetRule) {
+    	boolean update = true;
+        for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
+            if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
+                rules.set(ruleNum, targetRule);
+            }
+        }
+        try {
+            writeFile();
+        } catch(IOException e) {
+           	update = false;
+            System.out.println(e.toString());
+        }
+        return update;
+    }
+
+    // ファイル更新用メソッド
+    private void writeFile() throws IOException {
+    	String fileName = RuleBaseSystem.fileName;
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, false), "UTF-8"));
+
+        for(Rule rule: rules) {
+            // ルール名の出力
+            writer.println("\nrule	\"" + rule.getName() + "\"");
+            // 前件の出力
+            List<String> antecedents = rule.getAntecedents();
+            for(int antecedentNum = 0; antecedentNum < antecedents.size(); antecedentNum++) {
+                if(antecedentNum == 0) {
+                    writer.println("if	\"" + antecedents.get(antecedentNum) + "\"");
+                } else {
+                    writer.println("	\"" + antecedents.get(antecedentNum) + "\"");
+                }
+            }
+            // 後件の出力
+            writer.println("then	\"" + rule.getConsequent() + "\"");
+        }
+        writer.close();
     }
 }
 
@@ -483,8 +811,6 @@ class Assertion {
  *
  */
 class StepResult {
-	//static int counter = 0;
-	//int id;
 	private ArrayList<Assertion> add;
 	private Rule apply;
 	private Assertion success;
@@ -527,6 +853,7 @@ class Matcher {
     StringTokenizer st1;
     StringTokenizer st2;
     HashMap<String,String> vars;
+    static ArrayList<String> answer = new ArrayList<>();;
 
     Matcher(){
         vars = new HashMap<String,String>();
@@ -581,6 +908,10 @@ class Matcher {
         } else {
             vars.put(vartoken,token);
         }
+        if (RuleBaseSystem.question == true) {
+        	//System.out.println("答え = " + token);
+        	answer.add(token);
+        }
         return true;
     }
 
@@ -589,4 +920,7 @@ class Matcher {
         return str1.startsWith("?");
     }
 
+    ArrayList<String> getAnswer() {
+    	return answer;
+    }
 }
