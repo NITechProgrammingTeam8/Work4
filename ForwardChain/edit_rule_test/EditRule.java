@@ -70,6 +70,7 @@ public class EditRule {
             }
             // 後件の出力
             writer.println("then	\"" + rule.getConsequent() + "\"");
+            writer.println();
         }
         writer.close();
     }

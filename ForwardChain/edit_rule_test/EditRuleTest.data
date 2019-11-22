@@ -1,7 +1,5 @@
-rule	"TestRule1"
-if	"?x is a professor"
-	"?x has a toralab"
-then	"?x is Mr. Shintani"
-rule	"TestRule2"
-if	"?x is a elderly-man"
-then	"?x is Mr. Shintani"
+rule	"CarRule10"
+if	"?x is a Toyota"
+	"?x has several seats"
+then	"?x is a Prius"
+
