@@ -1,9 +1,15 @@
-import java.util.*;
-import java.io.*;
+import java.io.FileReader;
+import java.io.Serializable;
+import java.io.StreamTokenizer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.StringTokenizer;
 
 public class RuleBaseSystem {
     static RuleBase rb;
     static FileManager fm;
+
     public static void main(String args[]){
 	if(args.length != 1){
 	    System.out.println("Usage: %java RuleBaseSystem [query strings]");
@@ -25,16 +31,69 @@ public class RuleBaseSystem {
 	    rb.backwardChain(queries);
 	}
     }
+
+    public ArrayList<StepResult> stepResult(String filename, String wmname, String target) {
+    	fm = new FileManager();
+    	ArrayList<Rule> rules = fm.loadRules(filename);
+    	ArrayList<String> wm = fm.loadWm(wmname);
+    	rb = new RuleBase(rules,wm);
+    	// これは探索の中に入るかもしれない
+    	StringTokenizer st = new StringTokenizer(target,",");
+		ArrayList<String> queries = new ArrayList<String>();
+		for(int i = 0 ; i < st.countTokens();){
+			queries.add(st.nextToken());
+		}
+		rb.backwardChain(queries);
+		ArrayList<StepResult> answer = rb.getStepResults();
+		return answer;
+    }
+
+    public ArrayList<StepResult> reStepResult(ArrayList<Rule> rules, String wmname, String target) {
+    	fm = new FileManager();
+    	ArrayList<String> wm = fm.loadWm(wmname);
+    	rb = new RuleBase(rules,wm);
+    	// これは探索の中に入るかもしれない
+    	StringTokenizer st = new StringTokenizer(target,",");
+		ArrayList<String> queries = new ArrayList<String>();
+		for(int i = 0 ; i < st.countTokens();){
+			queries.add(st.nextToken());
+		}
+		rb.backwardChain(queries);
+		ArrayList<StepResult> answer = rb.getStepResults();
+		return answer;
+    }
+
+    public ArrayList<Rule> getRules() {
+    	return rb.getRules();
+    }
 }
-    
+
 class RuleBase implements Serializable{
     String fileName;
     ArrayList<String> wm;
     ArrayList<Rule> rules;
-    
+
+    Rule questionField = null;
+    Rule answerField = null;
+    String question = null;
+    String answer = null;
+    Rule sub = null;
+    ArrayList<Rule> subs;
+    ArrayList<StepResult> srs;
+    StepResult sr = new StepResult();
+    int miss;
+    int overwrite;
+    ArrayList<String> targets;
+
     RuleBase(ArrayList<Rule> theRules,ArrayList<String> theWm){
 	wm = theWm;
 	rules = theRules;
+	srs = new ArrayList<>();
+	targets = new ArrayList<>();
+	miss = 0;
+	overwrite = 100000;
+	sr.shokika();
+	subs = new ArrayList<>();
     }
 
     public void setWm(ArrayList<String> theWm){
@@ -45,11 +104,17 @@ class RuleBase implements Serializable{
 	rules = theRules;
     }
 
+    public ArrayList<Rule> getRules() {
+    	return rules;
+    }
+
     public void backwardChain(ArrayList<String> hypothesis){
 	System.out.println("Hypothesis:"+hypothesis);
 	ArrayList<String> orgQueries = (ArrayList)hypothesis.clone();
 	//HashMap<String,String> binding = new HashMap<String,String>();
 	HashMap<String,String> binding = new HashMap<String,String>();
+	targets = new ArrayList<>(hypothesis);
+	targets.remove(0);
 	if(matchingPatterns(hypothesis,binding)){
 	    System.out.println("Yes");
 	    System.out.println(binding);
@@ -71,7 +136,7 @@ class RuleBase implements Serializable{
      * に対するバインディング情報を返す
      */
     private boolean matchingPatterns(ArrayList<String> thePatterns,HashMap<String,String> theBinding){
-        String firstPattern;
+    	String firstPattern;
 	if(thePatterns.size() == 1){
 	    firstPattern = (String)thePatterns.get(0);
 	    if(matchingPatternOne(firstPattern,theBinding,0) != -1){
@@ -97,7 +162,7 @@ class RuleBase implements Serializable{
 	      if(tmpPoint != -1){
 	          System.out.println("Success:"+firstPattern);
 	          if(matchingPatterns(thePatterns,theBinding)){
-	              //成功  
+	              //成功
 	              return true;
 	          } else {
 	              //失敗
@@ -142,6 +207,10 @@ class RuleBase implements Serializable{
 				     theBinding)){
 		System.out.println("Success WM");
 		System.out.println((String)wm.get(i)+" <=> "+thePattern);
+		answerField = null;
+		answer = (String)wm.get(i);
+		question = thePattern;
+		srsAdd(questionField, question, answerField, answer);
 		return i+1;
 	    }
 	}
@@ -150,6 +219,8 @@ class RuleBase implements Serializable{
 	// Ruleと Unify してみる．
  	for(int i = cPoint ; i < rules.size() ; i++){
  	    Rule aRule = rename((Rule)rules.get(i));
+ 	    sub = aRule;
+ 	    subs.add(aRule);
 	    // 元のバインディングを取っておく．
 	    HashMap<String,String> orgBinding = new HashMap<String,String>();
 	    for(Iterator<String> itr = theBinding.keySet().iterator(); itr.hasNext();){
@@ -162,11 +233,26 @@ class RuleBase implements Serializable{
  				     theBinding)){
 		System.out.println("Success RULE");
 		System.out.println("Rule:"+aRule+" <=> "+thePattern);
- 		// さらにbackwardChaining
+		answerField = aRule;
+		question = thePattern;
+		answer = (String)aRule.getConsequent();
+		if (targets.size() > 0) {
+			if(targets.get(0).equals(question)) {
+				questionField = null;
+				if (targets.size() > 0) {
+					targets.remove(0);
+				}
+			}
+		}
+		srsAdd(questionField, question, answerField, answer);
+		System.out.println((String)aRule.getConsequent());
+		// さらにbackwardChaining
  		ArrayList<String> newPatterns = aRule.getAntecedents();
+ 		questionField = aRule;
 		if(matchingPatterns(newPatterns,theBinding)){
 		    return wm.size()+i+1;
 		} else {
+			miss = 1;
 		    // 失敗したら元に戻す．
 		    theBinding.clear();
 		    for(Iterator<String> itr = orgBinding.keySet().iterator(); itr.hasNext();){
@@ -192,7 +278,7 @@ class RuleBase implements Serializable{
 	uniqueNum = uniqueNum + 1;
 	return newRule;
     }
-    
+
     private String instantiate(String thePattern, HashMap<String,String> theBindings){
 	String result = new String();
 	StringTokenizer st = new StringTokenizer(thePattern);
@@ -211,6 +297,42 @@ class RuleBase implements Serializable{
     private boolean var(String str1){
 	// 先頭が ? なら変数
 	return str1.startsWith("?");
+    }
+
+    private void srsAdd(Rule questionField, String question, Rule answerField, String answer) {
+    	if (questionField != null) {
+    		String[] split = question.split(" ", 0);
+    		int number = Integer.parseInt(split[0].replaceAll("[^0-9]",""));
+    		if (number < subs.size()) {
+    			questionField = null;
+    			questionField = subs.get(number);
+    		}
+    	}
+    	if (miss != 0) {
+    		for (StepResult sr : srs) {
+    			if (sr.getQ().equals(question)) {
+    				overwrite = sr.getId();
+    				sr.setAF(answerField);
+    				sr.setA(answer);
+    				break;
+    			}
+    		}
+    		miss = 0;
+    		overwrite++;
+    	} else if (overwrite < srs.size()) {
+    		srs.get(overwrite).setQF(questionField);
+    		srs.get(overwrite).setQ(question);
+    		srs.get(overwrite).setAF(answerField);
+    		srs.get(overwrite).setA(answer);
+    		overwrite++;
+    	} else {
+    		srs.add( new StepResult(questionField, question, answerField, answer) );
+    		overwrite = 100000;
+    	}
+    }
+
+    public ArrayList<StepResult> getStepResults() {
+    	return srs;
     }
 }
 
@@ -343,7 +465,7 @@ class Rule implements Serializable{
 	}
 	return result;
     }
-    
+
     private String renameVars(String thePattern,
 			      HashMap<String,String> renamedVarsTable){
 	String result = new String();
@@ -381,13 +503,98 @@ class Rule implements Serializable{
     }
 }
 
+/**
+ * 各ステップごとの結果を表すクラス．
+ *
+ *
+ */
+class StepResult {
+	private Rule questionField;
+	private Rule answerField;
+	private String question;
+	private String answer;
+	private static int counter = 0;
+	private int id;
+
+	StepResult() { }
+
+	StepResult(Rule theQF, String theQ, Rule theAF, String theA){
+        this.questionField = theQF;
+        this.question = theQ;
+        this.answerField = theAF;
+        this.answer = theA;
+        id = counter++;
+    }
+
+	/**
+     * ルールを返す．
+     *
+     * @return    本体を表す Rule
+     */
+    public Rule getQF(){
+        return questionField;
+    }
+
+	/**
+     * ルールを返す．
+     *
+     * @return    本体を表す Rule
+     */
+    public Rule getAF(){
+        return answerField;
+    }
+
+	/**
+     * 検索質問を返す．
+     *
+     * @return    本体を表す String
+     */
+    public String getQ(){
+        return question;
+    }
+
+    /**
+     * 検索結果を返す．
+     *
+     * @return    本体を表す String
+     */
+    public String getA(){
+        return answer;
+    }
+
+    /**
+     * 各値の変更．
+     *
+     */
+    public void setQF(Rule theQF){ this.questionField = theQF; }
+    public void setAF(Rule theAF){ this.answerField = theAF; }
+    public void setQ(String theQ){ this.question = theQ; }
+    public void setA(String theA){ this.answer = theA; }
+
+    /**
+     * StepResultのidを返す．
+     *
+     * @return    通し番号を表す id
+     */
+    public int getId(){
+        return id;
+    }
+
+    public void shokika() {
+    	counter = 0;
+    }
+}
+
+
 class Unifier {
     StringTokenizer st1;
-    String buffer1[];    
+    String buffer1[];
     StringTokenizer st2;
     String buffer2[];
     HashMap<String,String> vars;
-    
+
+    //String kekka;
+
     Unifier(){
 	//vars = new HashMap();
     }
@@ -417,14 +624,14 @@ class Unifier {
     public boolean unify(String string1,String string2){
 	// 同じなら成功
 	if(string1.equals(string2)) return true;
-	
+
 	// 各々トークンに分ける
 	st1 = new StringTokenizer(string1);
 	st2 = new StringTokenizer(string2);
-	
+
 	// 数が異なったら失敗
 	if(st1.countTokens() != st2.countTokens()) return false;
-	
+
 	// 定数同士
 	int length = st1.countTokens();
 	buffer1 = new String[length];
@@ -487,7 +694,7 @@ class Unifier {
 	    }
 	}
     }
-    
+
     void replaceBindings(String preString,String postString){
 	for(Iterator<String> i = vars.keySet().iterator(); i.hasNext();){
 	    String key = i.next();
@@ -496,7 +703,7 @@ class Unifier {
 	    }
 	}
     }
-    
+
     boolean var(String str1){
 	// 先頭が ? なら変数
 	return str1.startsWith("?");
