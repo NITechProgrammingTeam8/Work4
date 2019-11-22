@@ -83,3 +83,125 @@ eg)
 「Taro's-Car is big」に対して「Is Taro's-Car big ?」が聞きたいでしょ！
 順番入れ替えるのがいいよね！やっぱり！
 
+
+・2019/11/21(木)
+「my-car has a VTEC engine」
+に対して,
+「What does my car have ?」
+と質問すると,
+「my-car has ?x」
+となるので,
+「?x = a VTEC engine」
+とはならないのである. 1語じゃないとマッチングできないからね！なので,
+「my-car has-a VTEC-engine」
+にするしかないよね！
+
+・2019/11/22(金)
+後ろ向き推論において, 
+「What does his car have ?」は質問の答えが返ってきません.
+なぜなら, 「his-car has ?x」となって...あ、いや、
+ルールを参照する問には答えられなくてもいいけど, WMを参照するやつにはしっかり答えを返さないと...
+
+いや～～,,,なんか操作的に, backWardChainメソッドを使う..から, WMは触らない流れなんだよね～
+だから, 複数候補が必要な{?x = a big engine}みたいなのって,{?x = a-big-engine}なら,,,いや,それなら
+{has-a big-engine}にしないといけないしな～～
+
+
+
+/******** 実行例[前向き推論] **********/
+質問を入力してください
+Is my car inexpensive ?
+質問内容 = Is my car inexpensive ?
+patarn = my-car is inexpensive
+答え = Yes
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+Does my car have a VTEC engine ?
+質問内容 = Does my car have a VTEC engine ?
+secondToken = my-car
+patarn = my-car has a VTEC engine
+答え = Yes
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+What does my car have ?
+質問内容 = What does my car have ?
+patarn = my-car has ?x
+答え = color-models
+答え = seats
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+Is my car an Accord Wagon ?
+質問内容 = Is my car an Accord Wagon ?
+patarn = my-car is an Accord Wagon
+答え = Yes
+
+質問を入力してください
+What is an Accord Wagon ?
+質問内容 = What is an Accord Wagon ?
+patarn = ?x is an Accord Wagon
+もう１回? 1...Yes/ 0...No 		← できてないっすね...
+
+質問を入力してください
+What is my car ?
+質問内容 = What is my car ?
+patarn = ?x is my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+もう１回? 1...Yes/ 0...No 		← ばぐってますね...
+
+/******** 実行例[後ろ向き推論] **********/
+質問を入力してください
+Is his car inexpensive ?
+質問内容 = Is his car inexpensive ?
+patarn = his-car is inexpensive
+queries = [his-car is inexpensive]
+Hypothesis:[his-car is inexpensive]
+Success WM
+his-car is inexpensive <=> his-car is inexpensive
+qFlag = 0
+Yes
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+Does his car have several color models ?
+質問内容 = Does his car have several color models ?
+patarn = his-car has several color models
+queries = [his-car has several color models]
+Hypothesis:[his-car has several color models]
+Success WM
+his-car has several color models <=> his-car has several color models
+qFlag = 0
+Yes
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+What is an Accord Wagon ?
+質問内容 = What is an Accord Wagon ?
+patarn = ?x is an Accord Wagon
+queries = [?x is an Accord Wagon]
+Hypothesis:[?x is an Accord Wagon]
+Success WM
+his-car is an Accord Wagon <=> ?x is an Accord Wagon
+qFlag = 1
+his-car
+もう１回? 1...Yes/ 0...No 
+
+What is a wagon ?
+質問内容 = What is a wagon ?
+patarn = ?x is a wagon
+queries = [?x is a wagon]
+Hypothesis:[?x is a wagon]
+Success WM
+his-car is a wagon <=> ?x is a wagon
+qFlag = 1
+his-car
+もう１回? 1...Yes/ 0...No 

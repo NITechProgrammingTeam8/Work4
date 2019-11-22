@@ -1,4 +1,8 @@
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
@@ -13,21 +17,13 @@ public class RuleBaseSystem {
     static String name;
     public static void main(String args[]){
 
-    	//車の種類の初期化
-    	String[] carType = {"Carolla Wagon",
-    						"Prius",
-    						"Accord Wagon",
-    						"NSX",
-    						"Lamborghini Countach",
-    						"Ferrari F50",
-    						"Jaguar XJ8"};
-
-		if(args.length != 1){
+/*		if(args.length != 1){
 		    System.out.println("Usage: %java RuleBaseSystem [query strings]");
 		    System.out.println("Example:");
 		    System.out.println(" \"?x is b\" and \"?x is c\" are queries");
 		    System.out.println("  %java RuleBaseSystem \"?x is b,?x is c\"");
 		} else {
+*/
 		    fm = new FileManager();
 		    ArrayList<Rule> rules = fm.loadRules("CarShop.data");	//ファイルからルールの読み取り
 		    //ArrayList rules = fm.loadRules("AnimalWorld.data");
@@ -39,79 +35,21 @@ public class RuleBaseSystem {
 			Scanner stdIn2 = new Scanner(System.in);	//数値読み込み
 			int returnFlag = 0;
 			do {
-		    //ここの仮説の部分を変更します
-			System.out.println("質問を入力してください");
-			String s = stdIn1.nextLine();
-		    //String s = args[0];		//質問英語を入力
-		    System.out.println("質問内容 = " + s);
+			    //ここの仮説の部分を変更します
+				System.out.println("質問を入力してください");
+				String englishQuestion = stdIn1.nextLine();
+			    //String s = args[0];		//質問英語を入力
+			    System.out.println("質問内容 = " + englishQuestion);
 
-		    //名前を押さえておきたい
-		    String name = null;
-		    StringTokenizer question = new StringTokenizer(s);
+			    //質問応答メソッド&解析
+			    NaturalLanguage(englishQuestion);
 
-		    //車や動物の種類は気になるよね
-		    //eg) 「What kind of car does Taro have ?」
-		    //eg) 「What is the name of the car he has ?」かな...
-		    if(s.contains("type") || s.contains("kind")) {	//車の種類を総当たりする
-		    	rb.qFlag = 1;
-		    	for(int i = 0; i < 6;i ++) {
-		    		name = question.nextToken();
-		    		System.out.println("name = " + name);
-		    	}
-
-		    	for(int i = 0; i < carType.length; i++){
-		    		//aとanの違い
-		    		if(carType[i].contains("A")) {
-		    			s = "?x is an " + carType[i];
-		    		}
-		    		else {
-		    			s = "?x is a " + carType[i];
-		    		}
-				    //解析開始
-				    StringTokenizer st = new StringTokenizer(s ,",");
-
-				    ArrayList<String> queries = new ArrayList<String>();
-				    for(int j = 0 ; j < st.countTokens();){
-				    	queries.add(st.nextToken());
-				    	System.out.println("queries = " + queries);
-				    }
-				    rb.backwardChain(queries);	//ここのqueriesはStringの文字列
-
-		    		System.out.println("rb.myName = " + rb.myName);
-		    		String myName = rb.myName;
-		    		if(rb.myName != null) {
-		    			//rb.myName = myName.replace("'s-Car","");
-		    			rb.myName = myName.replace("his-car","he");
-		    			System.out.println("rb.myName改 = " + rb.myName);
-		    		}
-		    		System.out.println("rb.myName = " + rb.myName);
-		    		System.out.println("name      = " + name);
-		    		if(name.equals(rb.myName)){
-		    	//		iを保存して, System.out.println("答え = " + carType[i]);
-		    			System.out.println("Answer2 = " + carType[i]);
-		    			break;
-		    		}
-		    	}
-		    }
-		    else {
-	//		    StringTokenizer st = new StringTokenizer(args[0],",");  //ここの質問文を変えます
-			    //解析開始
-			    StringTokenizer st = new StringTokenizer(NaturalLanguage(s),",");
-
-			    ArrayList<String> queries = new ArrayList<String>();
-			    for(int i = 0 ; i < st.countTokens();){
-			    	queries.add(st.nextToken());
-			    	System.out.println("queries = " + queries);
-			    }
-			    rb.backwardChain(queries);	//ここのqueriesはStringの文字列
-		    }
-
-			System.out.print("もう１回? 1...Yes/ 0...No ");
-			returnFlag = stdIn2.nextInt();
-			rb.qFlag = 0;
+			    System.out.print("もう１回? 1...Yes/ 0...No ");
+			    returnFlag = stdIn2.nextInt();
+			    rb.qFlag = 0;
 			}while(returnFlag == 1);
 		}
-    }
+//    }
 
     /***
      *	NaturalLanguageメソッド
@@ -119,8 +57,11 @@ public class RuleBaseSystem {
      *  return: 変数を含むパターン 「?x is an Accord Wagon」
      *  に置き換える
      */
-    public static String NaturalLanguage(String s) {
-
+    public static void NaturalLanguage(String equestion) {
+    	/***
+    	 *	1. "英語の質問:s"を"変数含むパターン"に置き換える
+    	 *	2. その"変数を含むパターン"を解析する:rb.backwardChain()を実行
+    	 */
     	//解
     	ArrayList<String> tokenList = new ArrayList<>();
     	//今どこを指しているか
@@ -131,26 +72,26 @@ public class RuleBaseSystem {
     	 * 「What color is his car?」と
     	 * 「What color is Ito's car?」の違いをしっかりいきたい!
     	 */
-    	if(s.contains("'s c")) {
-    		s = s.replace("'s c", "'s-C");
+    	if(equestion.contains("'s c")) {
+    		equestion = equestion.replace("'s c", "'s-C");
     	}
-    	else if(s.contains("his")) {
-    		s = s.replace("his c", "his-c");
+    	else if(equestion.contains("his")) {
+    		equestion = equestion.replace("his c", "his-c");
     	}
 
     	//1.まずはトークンに分解して,
-    	StringTokenizer st = new StringTokenizer(s);
+    	StringTokenizer stoken = new StringTokenizer(equestion);
     	//  トークンの数を保存
-    	int tokenSize = st.countTokens() - 1;	//最後の?は除くからね！
+    	int tokenSize = stoken.countTokens() - 1;	//最後の?は除くからね！
 
     	//2.いろいろいじって,
     	/***
     	 *  注意1)今回は前回と違って,3つ(Head,Tail,Label)に当てはめればいいわけじゃないから
     	 *  注意2)aかanかだいぶ変わるな
     	 */
-    	String firstToken = st.nextToken();
+    	String firstToken = stoken.nextToken();
     	tokenPoint ++;
-    	String secondToken = st.nextToken();
+    	String secondToken = stoken.nextToken();
     	tokenPoint ++;
     	if(firstToken.equals("Is")) {
     		tokenList.add(secondToken);
@@ -159,16 +100,30 @@ public class RuleBaseSystem {
     	else if(firstToken.equals("What")) {
     		rb.qFlag = 1;
     		if(secondToken.equals("color")) {
-    			String thirdToken = st.nextToken();
+    			String thirdToken = stoken.nextToken();
     			tokenPoint ++;
-    			tokenList.add(st.nextToken());
+    			tokenList.add(stoken.nextToken());
     			tokenPoint ++;
     			tokenList.add(thirdToken);
     			tokenList.add(" ?x");
     		}
+    		else if(secondToken.equals("does")) {
+    			tokenList.add(stoken.nextToken());
+    			tokenPoint ++;
+    			String thirdToken = stoken.nextToken();
+    			tokenPoint ++;
+    			if(thirdToken.equals("have")) {
+    				tokenList.add("has");
+    			}
+    			tokenList.add("?x");
+    		}
+    		else if(secondToken.equals("is")) {
+    			tokenList.add("?x");
+    			tokenList.add("is");
+    		}
     	}
     	else if(firstToken.equals("Does")) {
-    		String thirdToken = st.nextToken();
+    		String thirdToken = stoken.nextToken();
     		tokenPoint ++;
     		//三単現のs
     		if(thirdToken.equals("have")) {
@@ -184,21 +139,28 @@ public class RuleBaseSystem {
     	//3.toStringで最後に合体させる(今回はあくまでStrigの文字列にしないといけないのだ.)
     	//  格納
     	for(int i = tokenPoint; i < tokenSize; i++) {
-    		tokenList.add(st.nextToken());
+    		tokenList.add(stoken.nextToken());
     	}
     	//  ArrayList → String文字へ
-    	String str = tokenList.toString();
-    	str = str.replace("[", "");
-    	str = str.replace("]", "");
-    	str = str.replace(",", "");
+    	String patarn = tokenList.toString();
+    	patarn = patarn.replace("[", "");
+    	patarn = patarn.replace("]", "");
+    	patarn = patarn.replace(",", "");
     	//str = str.replace(" ?", "");	//ここで処理すると変数「?x」の?も消えちゃう
-    	System.out.println("str = " + str);
+    	System.out.println("patarn = " + patarn);
 
 
-    	//String str = "Ito's-Car is ?x";	//前件文の内容「RULEの後件部にないから,WMから見る」
-    	//String str = "?x is a Ferrari F50";		//後件文の内容「RULEを見て,WMを見る」
+    	//String patarn = "Ito's-Car is ?x";	//前件文の内容「RULEの後件部にないから,WMから見る」
+    	//String patarn = "?x is a Ferrari F50";		//後件文の内容「RULEを見て,WMを見る」
 
-    	return str;
+    	//解析
+	    StringTokenizer patarns = new StringTokenizer(patarn,",");
+	    ArrayList<String> queries = new ArrayList<String>();
+	    for(int i = 0 ; i < patarns.countTokens();){
+	    	queries.add(patarns.nextToken());
+	    	System.out.println("queries = " + queries);
+	    }
+	    rb.backwardChain(queries);	//ここのqueriesはStringの文字列
     }
 }
 
@@ -242,6 +204,14 @@ class RuleBase implements Serializable{
 					String anAnswer = instantiate(aQuery,binding);
 					//System.out.println("Query: "+aQuery);
 					//System.out.println("Answer:"+anAnswer);
+					try {
+						FileWriter file = new FileWriter("CarShopWm.data", true);
+						PrintWriter pw = new PrintWriter(new BufferedWriter(file));
+						pw.println(anAnswer);
+						pw.close();
+					} catch(IOException e) {
+						e.printStackTrace();
+					}
 			    }
 		    }
 		} else {

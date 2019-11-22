@@ -1,28 +1,267 @@
-import java.util.*;
-import java.io.*;
+import java.io.FileReader;
+import java.io.StreamTokenizer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Scanner;
+import java.util.StringTokenizer;
 
 /**
  * RuleBaseSystem
- * 
+ *
  */
 public class RuleBaseSystem {
     static RuleBase rb;
     public static void main(String args[]){
-        rb = new RuleBase();
-        rb.forwardChain();      
+        rb = new RuleBase();	//ルールベースの構築
+        rb.forwardChain();		//解析
+
+        //質問応答
+		Scanner stdIn1 = new Scanner(System.in);	//文字列読み込み
+		Scanner stdIn2 = new Scanner(System.in);	//数値読み込み
+		int returnFlag = 0;
+		do {
+		    //ここの仮説の部分を変更します
+			System.out.println("質問を入力してください");
+			String englishQuestion = stdIn1.nextLine();
+		    //String s = args[0];		//質問英語を入力
+		    System.out.println("質問内容 = " + englishQuestion);
+
+		    //質問応答メソッド&解析
+		    NaturalLanguage(englishQuestion);
+
+		    System.out.print("もう１回? 1...Yes/ 0...No ");
+		    returnFlag = stdIn2.nextInt();
+		    //rb.qFlag = 0;
+		}while(returnFlag == 1);
     }
+
+
+	/***
+	 *	NaturalLanguageメソッド
+	 *	引数 : 英語における自然言語の質問文「What is an Accord Wagon ?」
+	 *  return: 変数を含むパターン 「?x is an Accord Wagon」
+	 *  に置き換える
+	 */
+	public static void NaturalLanguage(String equestion) {
+		/***
+		 *	1. "英語の質問:s"を"変数含むパターン"に置き換える
+		 *	2. その"変数を含むパターン"を解析する:rb.backwardChain()を実行
+		 */
+		//解
+		ArrayList<String> tokenList = new ArrayList<>();
+		//今どこを指しているか
+		int tokenPoint = 0;
+
+		//前処理
+		/**
+		 * 「What color is his car?」と
+		 * 「What color is Ito's car?」の違いをしっかりいきたい!
+		 */
+		if(equestion.contains("'s c")) {
+			equestion = equestion.replace("'s c", "'s-C");
+		}
+		else if(equestion.contains("his")) {
+			equestion = equestion.replace("his c", "his-c");
+		}
+		else if(equestion.contains("my")) {
+			equestion = equestion.replace("my c", "my-c");
+		}
+
+		//1.まずはトークンに分解して,
+		StringTokenizer stoken = new StringTokenizer(equestion);
+		//  トークンの数を保存
+		int tokenSize = stoken.countTokens() - 1;	//最後の?は除くからね！
+
+		//2.いろいろいじって,
+		/***
+		 *  注意1)今回は前回と違って,3つ(Head,Tail,Label)に当てはめればいいわけじゃないから
+		 *  注意2)aかanかだいぶ変わるな
+		 */
+		String firstToken = stoken.nextToken();
+		tokenPoint ++;
+		String secondToken = stoken.nextToken();
+		tokenPoint ++;
+		if(firstToken.equals("Is")) {
+			tokenList.add(secondToken);
+			tokenList.add("is");
+		}
+		else if(firstToken.equals("What")) {
+			//rb.qFlag = 1;
+			if(secondToken.equals("color")) {
+				String thirdToken = stoken.nextToken();
+				tokenPoint ++;
+				tokenList.add(stoken.nextToken());
+				tokenPoint ++;
+				tokenList.add(thirdToken);
+				tokenList.add(" ?x");
+			}
+			else if(secondToken.equals("does")) {
+				tokenList.add(stoken.nextToken());
+				tokenPoint ++;
+				String thirdToken = stoken.nextToken();
+				tokenPoint ++;
+
+				//三単現のsの処理
+				//System.out.println("thirdToken = " + thirdToken);
+				//String thirdToken3s = thirdToken.substring(thirdToken.length()-1);
+				//System.out.println("thirdToken3s = " + thirdToken3s);
+
+				if(thirdToken.equals("have")) {
+					tokenList.add("has");
+				}
+				tokenList.add("?x");
+			}
+			else if(secondToken.equals("is")) {
+				tokenList.add("?x");
+				tokenList.add("is");
+			}
+		}
+		else if(firstToken.equals("Does")) {
+			String thirdToken = stoken.nextToken();
+			tokenPoint ++;
+
+			//三単現のsの処理
+			/*	三人称単数じゃなのは...
+			 *  1人称... I, We
+			 *  2人称... You
+			 *  3人称... They
+			 *
+			 **/
+			System.out.println("secondToken = " + secondToken);
+			String s = secondToken.substring(secondToken.length()-1);
+			//System.out.println("s = " + s);
+
+			if(thirdToken.equals("have") & !s.equals("s")) {		//んんん～～
+				thirdToken = "has";
+			}
+			else {
+				thirdToken = thirdToken.replace(thirdToken, thirdToken+"s");
+			}
+			tokenList.add(secondToken);
+			tokenList.add(thirdToken);
+		}
+
+		//3.toStringで最後に合体させる(今回はあくまでStrigの文字列にしないといけないのだ.)
+		//  格納
+		for(int i = tokenPoint; i < tokenSize; i++) {
+			tokenList.add(stoken.nextToken());
+		}
+		//  ArrayList → String文字へ
+		String patarn = tokenList.toString();
+		patarn = patarn.replace("[", "");
+		patarn = patarn.replace("]", "");
+		patarn = patarn.replace(",", "");
+		//str = str.replace(" ?", "");	//ここで処理すると変数「?x」の?も消えちゃう
+		System.out.println("patarn = " + patarn);
+
+
+		//String patarn = "Ito's-Car is ?x";	//前件文の内容「RULEの後件部にないから,WMから見る」
+		//String patarn = "?x is a Ferrari F50";		//後件文の内容「RULEを見て,WMを見る」
+
+
+		/*(注意)
+		 *	Yes/No返事のときは, そのままでいいんだけど,
+		 *  「my-car has ?x」のときに, 「?x= a VTEC engine」とかできなんすよね...
+		 *  ので, Whatの場合は別にしないといけない
+		 */
+
+		//whatの場合
+		if(patarn.contains("?x")) {
+
+			ArrayList<String> newWorkingMemory = new ArrayList<>();
+
+			for(int i = 0; i < rb.wm.memorySize(); i ++) {
+				ArrayList<String> newAssertion = new ArrayList<>();
+				StringTokenizer wmtoken = new StringTokenizer(rb.wm.getValue(i));
+
+				String wmfirstToken = wmtoken.nextToken();
+				newAssertion.add(wmfirstToken);
+
+				String wmsecondToken = wmtoken.nextToken();
+				String wmthirdToken = wmtoken.nextToken();
+				if(wmsecondToken.equals("is") && wmthirdToken.equals("a")) {
+					newAssertion.add("is-a");
+				}
+				else if(wmsecondToken.equals("is") && wmthirdToken.equals("an")) {
+					newAssertion.add("is-an");
+				}
+				else if(wmsecondToken.equals("has") && wmthirdToken.equals("a")) {
+					newAssertion.add("has-a");
+				}
+				else if(wmsecondToken.equals("has") && wmthirdToken.equals("an")) {
+					newAssertion.add("has-an");
+				}
+				else if(wmthirdToken.equals("several")) {
+					newAssertion.add(wmsecondToken);
+				}
+				else {
+					newAssertion.add(wmsecondToken);
+					newAssertion.add(wmthirdToken);
+				}
+
+				//System.out.println("残りトークンの数 = " + wmtoken.countTokens());
+				if(wmtoken.countTokens() > 1) {
+					String wmforthToken = wmtoken.nextToken();
+					String wmfifthToken = wmtoken.nextToken();
+					newAssertion.add(wmforthToken + "-" + wmfifthToken);
+				}
+				else if(wmtoken.countTokens() == 1){
+					newAssertion.add(wmtoken.nextToken());
+				}
+
+				//System.out.println("newAssertion = " + newAssertion);
+				//  ArrayList → String文字へ
+				String stringAssertion = newAssertion.toString();
+				stringAssertion = stringAssertion.replace("[", "");
+				stringAssertion = stringAssertion.replace("]", "");
+				stringAssertion = stringAssertion.replace(",", "");
+				//System.out.println("stringAssertion = " + stringAssertion);
+				newWorkingMemory.add(stringAssertion);
+			}
+			//System.out.println("newWorkingMemory = " + newWorkingMemory);
+
+			//解析
+			for(int i = 0; i < newWorkingMemory.size(); i++) {
+				(new Matcher()).matching(patarn, newWorkingMemory.get(i));
+			}
+		}
+
+		else {
+			//解析
+			boolean flag = false;
+			for(int i = 0; i < rb.wm.memorySize(); i ++) {
+				if((new Matcher()).matching(patarn, rb.wm.getValue(i))) {
+					System.out.println("答え = Yes");
+					flag = true;
+				}
+			}
+			if(!flag) {
+				System.out.println("答え = No");
+			}
+		}
+	}
 }
 
 /**
  * ワーキングメモリを表すクラス．
  *
- * 
+ *
  */
 class WorkingMemory {
-    ArrayList<String> assertions;    
+    ArrayList<String> assertions;
 
     WorkingMemory(){
         assertions = new ArrayList<String>();
+    }
+
+    //WMの数を取得
+    public int memorySize() {
+    	return assertions.size();
+    }
+
+    //WMの要素を取得
+    public String getValue(int i) {
+    	return assertions.get(i);
     }
 
     /**
@@ -78,7 +317,7 @@ class WorkingMemory {
             }
         }
     }
-    
+
     /**
      * アサーションをワーキングメモリに加える．
      *
@@ -107,13 +346,11 @@ class WorkingMemory {
     public String toString(){
         return assertions.toString();
     }
-    
+
 }
 
 /**
  * ルールベースを表すクラス．
- *
- * 
  */
 class RuleBase {
     String fileName;
@@ -121,7 +358,7 @@ class RuleBase {
     StreamTokenizer st;
     WorkingMemory wm;
     ArrayList<Rule> rules;
-    
+
     RuleBase(){
         fileName = "CarShop.data";
         wm = new WorkingMemory();
@@ -134,6 +371,10 @@ class RuleBase {
         rules = new ArrayList<Rule>();
         loadRules(fileName);
     }
+
+    //public ArrayList memory() {
+    //	return wm;
+    //}
 
     /**
      * 前向き推論を行うためのメソッド
@@ -219,7 +460,7 @@ class RuleBase {
                                         consequent = st.sval;
                                     }
                                 }
-//                            } 
+//                            }
                         }
 			// ルールの生成
                         rules.add(new Rule(name,antecedents,consequent));
@@ -241,7 +482,7 @@ class RuleBase {
 /**
  * ルールを表すクラス．
  *
- * 
+ *
  */
 class Rule {
     String name;
@@ -289,14 +530,14 @@ class Rule {
     public String getConsequent(){
         return consequent;
     }
-    
+
 }
 
 class Matcher {
     StringTokenizer st1;
     StringTokenizer st2;
     HashMap<String,String> vars;
-    
+
     Matcher(){
         vars = new HashMap<String,String>();
     }
@@ -305,21 +546,21 @@ class Matcher {
         this.vars = bindings;
         return matching(string1,string2);
     }
-    
+
     public boolean matching(String string1,String string2){
         //System.out.println(string1);
         //System.out.println(string2);
-        
+
         // 同じなら成功
         if(string1.equals(string2)) return true;
-        
+
         // 各々トークンに分ける
         st1 = new StringTokenizer(string1);
         st2 = new StringTokenizer(string2);
 
         // 数が異なったら失敗
         if(st1.countTokens() != st2.countTokens()) return false;
-                
+
         // 定数同士
         for(int i = 0 ; i < st1.countTokens();){
             if(!tokenMatching(st1.nextToken(),st2.nextToken())){
@@ -327,7 +568,7 @@ class Matcher {
                 return false;
             }
         }
-        
+
         // 最後まで O.K. なら成功
         return true;
     }
@@ -350,6 +591,7 @@ class Matcher {
         } else {
             vars.put(vartoken,token);
         }
+        System.out.println("答え = " + token);
         return true;
     }
 
