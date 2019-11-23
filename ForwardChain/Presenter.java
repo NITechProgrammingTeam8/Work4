@@ -9,8 +9,6 @@ class Presenter {
     public Presenter(ViewInterface view) {
         this.view = view;
     }
-	
-	// VIEWは変えてないので、必要があれば改良お願いします
 
     /*
      * 始めと終わりにやりたいことがあれば…
@@ -24,13 +22,7 @@ class Presenter {
 
     // ルール更新後のデータから推論の再試行を行う
     public void restart(ArrayList<String> assertions) {
-    	// ◎変更後のルールとアサーションの受け取り、それに基づいた出力の再構築
     	ArrayList<Rule> rules = rulebasesystem.getRules();
-    	//ArrayList<Assertion> assertions = rulebasesystem.getAssertions();
-    	//System.out.println("長さ：" + assertions.size());
-    	//assertions.remove(6);
-    	//assertions.remove(6);
-    	//assertions.remove(6);
     	rulebasesystem.restart(assertions, rules);
     	view.successRestart();
     }
@@ -69,7 +61,7 @@ class Presenter {
     	try {
         	// ルール更新用メソッドの作成
             boolean result = rulebasesystem.updateRule(targetData);
-            view.successDeleteRule(result);
+            view.successUpdateRule(result);
         } catch (Exception e) {
         	view.showError(e.toString());
 		}
@@ -79,7 +71,7 @@ class Presenter {
     public ArrayList<Rule> fetchRules() {
         ArrayList<Rule> ruleList = new ArrayList<>();;
         try {
-        	// ルールの一覧を取得するメソッドの作成ArrayList<Rule>(データがなければnull)
+        	// ルールの一覧を取得するメソッドの作成ArrayList<Rule>(データがなければnullのはず)
             ruleList = rulebasesystem.getRules();
             view.showRuleList(ruleList);
         } catch (Exception e) {
@@ -89,29 +81,15 @@ class Presenter {
     }
 
     // アサーションによる検索をするよう指示する
-    public ArrayList<ArrayList<String>> searchAssertion(ArrayList<String> targetData) {
+    public ArrayList<ArrayList<SearchStep>> searchAssertion(ArrayList<String> targetData) {
         //ArrayList<String> resultList;
         // アサーションの検索結果を返すメソッドの作成
         // 複数の場合は改良必要あり
-    	ArrayList<ArrayList<String>> resultList = new ArrayList<>();
+    	ArrayList<ArrayList<SearchStep>> resultList = new ArrayList<>();
         for (String target : targetData) {
         	resultList.add(rulebasesystem.searchAssertion(target));
         }
-        //view.showSearchAssertion(resultList);
+        view.showSearchAssertion(resultList);
         return resultList;
     }
-
-    /*
-    // GUI終了時にTextDAOに対してデータベースからテキストファイルへの書き込みを指示する
-    // あおしゅー：終了時に必ずこのメソッドを呼んでください
-    // のりこさん：データベースからテキストファイルへの書き込みを行うメソッドを用意してください
-    public void finish() {
-        try {
-            textCon.writeTextFile();
-            view.successFinish();
-        } catch(FileNotFoundException e) {
-            view.showError(e.toString());
-        }
-    }
-    */
 }

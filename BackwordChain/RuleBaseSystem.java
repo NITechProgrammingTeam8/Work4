@@ -1,55 +1,121 @@
-import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 
 public class RuleBaseSystem {
     static RuleBase rb;
     static FileManager fm;
-    static String name;
+    static String fileName = null;
+    ArrayList<Rule> firstRule;
+
     public static void main(String args[]){
+	fm = new FileManager();
+    ArrayList<Rule> rules = fm.loadRules("CarShop.data");	//ファイルからルールの読み取り
+    //ArrayList rules = fm.loadRules("AnimalWorld.data");
+    ArrayList<String> wm    = fm.loadWm("CarShopWm.data");	//ファイルからワーキングメモリの読み取り
+    //ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
+    rb = new RuleBase(rules,wm);		//ルールベースの構築
 
-/*		if(args.length != 1){
-		    System.out.println("Usage: %java RuleBaseSystem [query strings]");
-		    System.out.println("Example:");
-		    System.out.println(" \"?x is b\" and \"?x is c\" are queries");
-		    System.out.println("  %java RuleBaseSystem \"?x is b,?x is c\"");
-		} else {
-*/
-		    fm = new FileManager();
-		    ArrayList<Rule> rules = fm.loadRules("CarShop.data");	//ファイルからルールの読み取り
-		    //ArrayList rules = fm.loadRules("AnimalWorld.data");
-		    ArrayList<String> wm    = fm.loadWm("CarShopWm.data");	//ファイルからワーキングメモリの読み取り
-		    //ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
-		    rb = new RuleBase(rules,wm);		//ルールベースの構築
+	Scanner stdIn1 = new Scanner(System.in);	//文字列読み込み
+	Scanner stdIn2 = new Scanner(System.in);	//数値読み込み
+	int returnFlag = 0;
+	do {
+	    //ここの仮説の部分を変更します
+		System.out.println("質問を入力してください");
+		String englishQuestion = stdIn1.nextLine();
+	    //String s = args[0];		//質問英語を入力
+	    System.out.println("質問内容 = " + englishQuestion);
 
-			Scanner stdIn1 = new Scanner(System.in);	//文字列読み込み
-			Scanner stdIn2 = new Scanner(System.in);	//数値読み込み
-			int returnFlag = 0;
-			do {
-			    //ここの仮説の部分を変更します
-				System.out.println("質問を入力してください");
-				String englishQuestion = stdIn1.nextLine();
-			    //String s = args[0];		//質問英語を入力
-			    System.out.println("質問内容 = " + englishQuestion);
+	    //質問応答メソッド&解析
+	    ArrayList<String> queries = NaturalLanguage(englishQuestion);
+	    rb.backwardChain(queries);
 
-			    //質問応答メソッド&解析
-			    NaturalLanguage(englishQuestion);
+	    System.out.print("もう１回? 1...Yes/ 0...No ");
+	    returnFlag = stdIn2.nextInt();
+	    rb.qFlag = 0;
+	}while(returnFlag == 1);
+    }
 
-			    System.out.print("もう１回? 1...Yes/ 0...No ");
-			    returnFlag = stdIn2.nextInt();
-			    rb.qFlag = 0;
-			}while(returnFlag == 1);
+    // 初期ルールデータの読み込み
+    public void start(String filename) {
+    	fm = new FileManager();
+    	firstRule = new ArrayList<>();
+    	RuleBaseSystem.fileName = filename;
+    	firstRule = fm.loadRules(filename);
+    }
+
+    // 更新前ルールの読み込み
+    public ArrayList<Rule> getFirstRules() {
+    	return firstRule;
+    }
+
+    // 更新前ルールでの推論
+    public ArrayList<StepResult> stepResult(String wmname, String target) {
+    	ArrayList<Rule> rules = getFirstRules();
+    	ArrayList<String> wm = fm.loadWm(wmname);
+    	rb = new RuleBase(rules,wm);
+    	/*
+    	// これは探索の中に入るかもしれない
+    	StringTokenizer st = new StringTokenizer(target,",");
+		ArrayList<String> queries = new ArrayList<String>();
+		for(int i = 0 ; i < st.countTokens();){
+			queries.add(st.nextToken());
 		}
-//    }
+		*/
+    	ArrayList<String> queries = NaturalLanguage(target);
+		rb.backwardChain(queries);
+		ArrayList<StepResult> answer = rb.getStepResults();
+		return answer;
+    }
+
+    // 更新後ルールでの推論
+    public ArrayList<StepResult> reStepResult(ArrayList<Rule> rules, String wmname, String target) {
+    	fm = new FileManager();
+    	ArrayList<String> wm = fm.loadWm(wmname);
+    	rb = new RuleBase(rules,wm);
+    	/*
+    	// これは探索の中に入るかもしれない
+    	StringTokenizer st = new StringTokenizer(target,",");
+		ArrayList<String> queries = new ArrayList<String>();
+		for(int i = 0 ; i < st.countTokens();){
+			queries.add(st.nextToken());
+		}
+		*/
+    	ArrayList<String> queries = NaturalLanguage(target);
+		rb.backwardChain(queries);
+		ArrayList<StepResult> answer = rb.getStepResults();
+		return answer;
+    }
+
+    // ルールの追加
+    public boolean addRule(String newRuleName, ArrayList<String> newRuleAntecedents, String newRuleConsequent) {
+    	return rb.insertRule( new Rule(newRuleName, newRuleAntecedents, newRuleConsequent) );
+    }
+
+    // ルールの削除
+    public boolean deleteRule(Rule targetRule) {
+    	return rb.deleteRule(targetRule);
+    }
+
+    // ルールの更新
+    public boolean updateRule(Rule targetRule) {
+    	return rb.updateRule(targetRule);
+    }
+
+    // 更新済みルールの取得
+    public ArrayList<Rule> getRules() {
+    	return rb.getRules();
+    }
 
     /***
      *	NaturalLanguageメソッド
@@ -57,7 +123,7 @@ public class RuleBaseSystem {
      *  return: 変数を含むパターン 「?x is an Accord Wagon」
      *  に置き換える
      */
-    public static void NaturalLanguage(String equestion) {
+    public static ArrayList<String> NaturalLanguage(String equestion) {
     	/***
     	 *	1. "英語の質問:s"を"変数含むパターン"に置き換える
     	 *	2. その"変数を含むパターン"を解析する:rb.backwardChain()を実行
@@ -160,63 +226,46 @@ public class RuleBaseSystem {
 	    	queries.add(patarns.nextToken());
 	    	System.out.println("queries = " + queries);
 	    }
-	    rb.backwardChain(queries);	//ここのqueriesはStringの文字列
-    }
-
-    public ArrayList<StepResult> stepResult(String filename, String wmname, String target) {
-    	fm = new FileManager();
-    	ArrayList<Rule> rules = fm.loadRules(filename);
-    	ArrayList<String> wm = fm.loadWm(wmname);
-    	rb = new RuleBase(rules,wm);
-    	// これは探索の中に入るかもしれない
-    	StringTokenizer st = new StringTokenizer(target,",");
-		ArrayList<String> queries = new ArrayList<String>();
-		for(int i = 0 ; i < st.countTokens();){
-			queries.add(st.nextToken());
-		}
-		rb.backwardChain(queries);
-		ArrayList<StepResult> answer = rb.getStepResults();
-		return answer;
-    }
-
-    public ArrayList<StepResult> reStepResult(ArrayList<Rule> rules, String wmname, String target) {
-    	fm = new FileManager();
-    	ArrayList<String> wm = fm.loadWm(wmname);
-    	rb = new RuleBase(rules,wm);
-    	// これは探索の中に入るかもしれない
-    	StringTokenizer st = new StringTokenizer(target,",");
-		ArrayList<String> queries = new ArrayList<String>();
-		for(int i = 0 ; i < st.countTokens();){
-			queries.add(st.nextToken());
-		}
-		rb.backwardChain(queries);
-		ArrayList<StepResult> answer = rb.getStepResults();
-		return answer;
-    }
-
-    public ArrayList<Rule> getRules() {
-    	return rb.getRules();
+	    //rb.backwardChain(queries);	//ここのqueriesはStringの文字列
+	    return queries;
     }
 }
 
 class RuleBase implements Serializable{
     String fileName;
-    String myName;	//これ追加
-    int qFlag;	//疑問詞判定フラグ
     ArrayList<String> wm;
     ArrayList<Rule> rules;
+    int qFlag;	//疑問詞判定フラグ
+
+    Rule questionField = null;
+    Rule answerField = null;
+    String question = null;
+    String answer = null;
+    Rule sub = null;
+    ArrayList<Rule> subs;
+    ArrayList<StepResult> srs;
+    StepResult sr = new StepResult();
+    int miss;
+    int overwrite;
+    ArrayList<String> targets;
 
     RuleBase(ArrayList<Rule> theRules,ArrayList<String> theWm){
-    	wm = theWm;
-    	rules = theRules;
+	wm = theWm;
+	rules = theRules;
+	srs = new ArrayList<>();
+	targets = new ArrayList<>();
+	miss = 0;
+	overwrite = 100000;
+	sr.shokika();
+	subs = new ArrayList<>();
     }
 
     public void setWm(ArrayList<String> theWm){
-    	wm = theWm;
+	wm = theWm;
     }
 
     public void setRules(ArrayList<Rule> theRules){
-    	rules = theRules;
+	rules = theRules;
     }
 
     public ArrayList<Rule> getRules() {
@@ -224,38 +273,26 @@ class RuleBase implements Serializable{
     }
 
     public void backwardChain(ArrayList<String> hypothesis){
-		System.out.println("Hypothesis:"+hypothesis);
-		ArrayList<String> orgQueries = (ArrayList)hypothesis.clone();
-		//HashMap<String,String> binding = new HashMap<String,String>();
-		HashMap<String,String> binding = new HashMap<String,String>();
-		if(matchingPatterns(hypothesis,binding)){
-			System.out.println("qFlag = " + qFlag);
-			if(qFlag == 0) {
-				System.out.println("Yes");
-			}
-			else if(qFlag == 1) {
-			    //System.out.println(binding);
-			    // 最終的な結果を基のクェリーに代入して表示する
-			    for(int i = 0 ; i < orgQueries.size() ; i++){
-					String aQuery = (String)orgQueries.get(i);
-					//System.out.println("binding: "+binding);
-					System.out.println(binding.get("?x"));
-					String anAnswer = instantiate(aQuery,binding);
-					//System.out.println("Query: "+aQuery);
-					//System.out.println("Answer:"+anAnswer);
-					try {
-						FileWriter file = new FileWriter("CarShopWm.data", true);
-						PrintWriter pw = new PrintWriter(new BufferedWriter(file));
-						pw.println(anAnswer);
-						pw.close();
-					} catch(IOException e) {
-						e.printStackTrace();
-					}
-			    }
-		    }
-		} else {
-		    System.out.println("No");
-		}
+	System.out.println("Hypothesis:"+hypothesis);
+	ArrayList<String> orgQueries = (ArrayList)hypothesis.clone();
+	//HashMap<String,String> binding = new HashMap<String,String>();
+	HashMap<String,String> binding = new HashMap<String,String>();
+	targets = new ArrayList<>(hypothesis);
+	targets.remove(0);
+	if(matchingPatterns(hypothesis,binding)){
+	    System.out.println("Yes");
+	    System.out.println(binding);
+	    // 最終的な結果を基のクェリーに代入して表示する
+	    for(int i = 0 ; i < orgQueries.size() ; i++){
+		String aQuery = (String)orgQueries.get(i);
+		System.out.println("binding: "+binding);
+		String anAnswer = instantiate(aQuery,binding);
+		System.out.println("Query: "+aQuery);
+		System.out.println("Answer:"+anAnswer);
+	    }
+	} else {
+	    System.out.println("No");
+	}
     }
 
     /**
@@ -412,88 +449,18 @@ class RuleBase implements Serializable{
 	for(int i = 0 ; i < st.countTokens();){
 	    String tmp = st.nextToken();
 	    if(var(tmp)){
-	    	result = result + " " + (String)theBindings.get(tmp);
-	    	//System.out.println("tmp: "+tmp+", result: "+result);
-	    	myName = result.replace(" ", "");
+		result = result + " " + (String)theBindings.get(tmp);
+	      System.out.println("tmp: "+tmp+", result: "+result);
 	    } else {
-	    	result = result + " " + tmp;
+		result = result + " " + tmp;
 	    }
 	}
 	return result.trim();
     }
 
     private boolean var(String str1){
-    	// 先頭が ? なら変数
-    	return str1.startsWith("?");
-    }
-
-    public String GetName() {
-    	return myName;
-    }
-
-    public int GetFlag() {
-    	return qFlag;
-	}
-	
-	// データ挿入用メソッド
-    public void insertRule(Rule targetRule) {
-        rules.add(targetRule);
-        try {
-            writeFile();
-        } catch(IOException e) {
-            System.out.println(e.toString());
-        }
-    }
-
-    // データ削除用メソッド
-    public void deleteRule(Rule targetRule) {
-        for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
-            if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
-                rules.remove(ruleNum);
-            }
-        }
-        try {
-            writeFile();
-        } catch(IOException e) {
-            System.out.println(e.toString());
-        }
-    }
-
-    // データ更新用メソッド
-    public void updateRule(Rule targetRule) {
-        for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
-            if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
-                rules.set(ruleNum, targetRule);
-            }
-        }
-        try {
-            writeFile();
-        } catch(IOException e) {
-            System.out.println(e.toString());
-        }
-    }
-
-    // ファイル更新用メソッド
-    private void writeFile() throws IOException {
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, false), "UTF-8"));
-
-        for(Rule rule: rules) {
-            // ルール名の出力
-            writer.println("rule	\"" + rule.getName() + "\"");
-            // 前件の出力
-            List<String> antecedents = rule.getAntecedents();
-            for(int antecedentNum = 0; antecedentNum < antecedents.size(); antecedentNum++) {
-                if(antecedentNum == 0) {
-                    writer.println("if	\"" + antecedents.get(antecedentNum) + "\"");
-                } else {
-                    writer.println("	\"" + antecedents.get(antecedentNum) + "\"");
-                }
-            }
-            // 後件の出力
-			writer.println("then	\"" + rule.getConsequent() + "\"");
-			writer.println();
-        }
-        writer.close();
+	// 先頭が ? なら変数
+	return str1.startsWith("?");
     }
 
     private void srsAdd(Rule questionField, String question, Rule answerField, String answer) {
@@ -530,6 +497,77 @@ class RuleBase implements Serializable{
 
     public ArrayList<StepResult> getStepResults() {
     	return srs;
+    }
+
+ // データ挿入用メソッド
+    public boolean insertRule(Rule targetRule) {
+    	boolean add = true;
+        rules.add(targetRule);
+        try {
+            writeFile();
+        } catch(IOException e) {
+        	add = false;
+            System.out.println(e.toString());
+        }
+        return add;
+    }
+
+    // データ削除用メソッド
+    public boolean deleteRule(Rule targetRule) {
+    	boolean delete = true;
+        for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
+            if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
+                rules.remove(ruleNum);
+            }
+        }
+        try {
+            writeFile();
+        } catch(IOException e) {
+        	delete = false;
+            System.out.println(e.toString());
+        }
+        return delete;
+    }
+
+    // データ更新用メソッド
+    public boolean updateRule(Rule targetRule) {
+    	boolean update = true;
+        for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
+            if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
+                rules.set(ruleNum, targetRule);
+            }
+        }
+        try {
+            writeFile();
+        } catch(IOException e) {
+           	update = false;
+            System.out.println(e.toString());
+        }
+        return update;
+    }
+
+    // ファイル更新用メソッド
+    private void writeFile() throws IOException {
+    	String fileName = RuleBaseSystem.fileName;
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, false), "UTF-8"));
+
+        for(Rule rule: rules) {
+            // ルール名の出力
+            writer.println("rule	\"" + rule.getName() + "\"");
+            // 前件の出力
+            List<String> antecedents = rule.getAntecedents();
+            for(int antecedentNum = 0; antecedentNum < antecedents.size(); antecedentNum++) {
+                if(antecedentNum == 0) {
+                    writer.println("if	\"" + antecedents.get(antecedentNum) + "\"");
+                } else {
+                    writer.println("	\"" + antecedents.get(antecedentNum) + "\"");
+                }
+            }
+            // 後件の出力
+            writer.println("then	\"" + rule.getConsequent() + "\"");
+            writer.println();
+        }
+        writer.close();
     }
 }
 
@@ -789,7 +827,7 @@ class Unifier {
     StringTokenizer st2;
     String buffer2[];
     HashMap<String,String> vars;
-  
+
     Unifier(){
 	//vars = new HashMap();
     }

@@ -8,15 +8,33 @@ class Presenter {
         this.view = view;
     }
 
-	// VIEW全く触れてないですすみません！！！好きに改良お願いします！！！
-	
-    // 探索を順に追った結果を返すよう指示する(返却方法検討中)
-    public ArrayList<StepResult> stepResults(String filename, String wmname, String target) {
-    	ArrayList<StepResult> stepresults = rulebasesystem.stepResult(filename, wmname, target);
-    	//view.showStepResult(stepresults);
+    // 初期ルールデータの読み込み
+    public void start(String filename) {
+    	rulebasesystem.start(filename);
+    	view.showStart();
+    }
+
+    // 初期ルールデータの一覧を取得
+    public ArrayList<Rule> fetchFirstRules() {
+        ArrayList<Rule> ruleList = new ArrayList<>();;
+        try {
+        	// ルールの一覧を取得するメソッドの作成ArrayList<Rule>(データがなければnull)
+            ruleList = rulebasesystem.getFirstRules();
+            view.showFirstRuleList(ruleList);
+        } catch (Exception e) {
+        	view.showError(e.toString());
+		}
+        return ruleList;
+    }
+
+    // 検索を順に追った結果を返すよう指示する(返却方法検討)
+    public ArrayList<StepResult> stepResults(String wmname, String target) {
+    	ArrayList<StepResult> stepresults = rulebasesystem.stepResult(wmname, target);
+    	view.showStepResult(stepresults);
     	return stepresults;
     }
 
+    // 検索を順に追った結果を返すよう指示する【再】(返却方法検討)
     public ArrayList<StepResult> reStepResults(String wmname, String target) {
     	ArrayList<Rule> rules = rulebasesystem.getRules();
     	/*
@@ -25,11 +43,10 @@ class Presenter {
     	}
     	*/
     	ArrayList<StepResult> stepresults = rulebasesystem.reStepResult(rules, wmname, target);
-    	//view.showStepResult(stepresults);
+    	view.showReStepResult(stepresults);
     	return stepresults;
     }
 
-    /*
     // 新規ルールを追加するように指示する
     public void addRule(String newRuleName, ArrayList<String> newRuleAntecedents, String newRuleConsequent) {
         try {
@@ -42,9 +59,9 @@ class Presenter {
     }
 
     // 指定ルールを削除するよう指示する
-    public void deleteRule(int targetData) {
+    public void deleteRule(Rule targetData) {
         try {
-        	// ルール削除用メソッドの作成(id指定で削除)
+        	// ルール削除用メソッドの作成
             boolean result = rulebasesystem.deleteRule(targetData);
             view.successDeleteRule(result);
         } catch (Exception e) {
@@ -52,61 +69,27 @@ class Presenter {
 		}
     }
 
-    // 指定ルールの名前を変更するよう指示する
-    public void changeRuleName(int targetData, String newName) {
-        try {
-        	// ルールの名称変更用メソッドの作成(idでルール指定)
-            boolean result = rulebasesystem.changeRuleName(targetData, newName);
-            view.successChangeRuleName(result);
-        } catch (Exception e) {
-        	view.showError(e.toString());
-		}
-    }
-
-    // 指定ルールの前件を変更するよう指示する
-    public void changeRuleAntecedents(int targetData, ArrayList<String> newAntecedents) {
-        try {
-        	// ルールの前件変更用メソッドの作成(idでルール指定)
-            boolean result = rulebasesystem.changeRuleAntecedents(targetData, newAntecedents);
-            view.successChangeRuleAntecedents(result);
-        } catch (Exception e) {
-        	view.showError(e.toString());
-		}
-    }
-
-    // 指定ルールの後件を変更するよう指示する
-    public void changeRuleConsequent(int targetData, String newConsequent) {
-        try {
-        	// ルールの後件変更用メソッドの作成(idでルール指定)
-            boolean result = rulebasesystem.changeRuleConsequent(targetData, newConsequent);
-            view.successChangeRuleConsequent(result);
+    // 指定ルールの値の更新を指示する
+    public void updateRule(Rule targetData) {
+    	try {
+        	// ルール更新用メソッドの作成
+            boolean result = rulebasesystem.updateRule(targetData);
+            view.successUpdataRule(result);
         } catch (Exception e) {
         	view.showError(e.toString());
 		}
     }
 
     // ルールの一覧表示を行うよう指示する
-    public void fetchRules() {
-        ArrayList<Rule> ruleList;
+    public ArrayList<Rule> fetchRules() {
+        ArrayList<Rule> ruleList = new ArrayList<>();;
         try {
         	// ルールの一覧を取得するメソッドの作成ArrayList<Rule>(データがなければnull)
-            ruleList = rulebasesystem.fetchRules();
+            ruleList = rulebasesystem.getRules();
             view.showRuleList(ruleList);
         } catch (Exception e) {
         	view.showError(e.toString());
 		}
+        return ruleList;
     }
-
-    // アサーションによる検索をするよう指示する
-    public void searchAssertion(String targetData) {
-        ArrayList<String> resultList;
-        try {
-        	// アサーションの検索結果を返すメソッドの作成(メソッド名はまだ仮決定)
-            resultList = rulebasesystem.searchAssertion();
-            view.showSearchAssertion(resultList);
-        } catch (Exception e) {
-        	view.showError(e.toString());
-		}
-    }
-    */
 }
