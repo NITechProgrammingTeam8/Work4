@@ -7,9 +7,20 @@ import java.io.*;
  *
  */
 public class RuleBaseSystem {
-    static RuleBase rb;
+	static RuleBase rb;
+    static ArrayList<String> firstAssertions;
+    static String fileName;
+    static boolean question;
+    ArrayList<String> answer;
+
+	// コンストラクタ
+	RuleBaseSystem () {
+		//RuleBase rb;
+		firstAssertions = new ArrayList<>();
+	}
+
     public static void main(String args[]){
-        rb = new RuleBase();	//ルールベースの構築
+    	rb = new RuleBase();	//ルールベースの構築
         rb.forwardChain();		//解析
 
         //質問応答
@@ -32,14 +43,68 @@ public class RuleBaseSystem {
 		}while(returnFlag == 1);
     }
 
+    // ここで全クラス＆メソッドを管理
+    public void start(ArrayList<String> firstAssertions, String fileName) {
+    	//System.out.println("仮");
+    	RuleBaseSystem.question = false;
+    	rb = new RuleBase(firstAssertions, fileName);
+        rb.forwardChain();
+        RuleBaseSystem.fileName = fileName;
+    }
 
-	/***
+    // 再試行＆再構築
+    public void restart(ArrayList<String> assertions, ArrayList<Rule> rules) {
+    	RuleBaseSystem.question = false;
+    	rb = new RuleBase(assertions, rules);
+    	rb.forwardChain();
+    }
+
+    // ルールの追加
+    public boolean addRule(String newRuleName, ArrayList<String> newRuleAntecedents, String newRuleConsequent) {
+    	return rb.insertRule( new Rule(newRuleName, newRuleAntecedents, newRuleConsequent) );
+    }
+
+    // ルールの削除
+    public boolean deleteRule(Rule targetRule) {
+    	return rb.deleteRule(targetRule);
+    }
+
+    // ルールの更新
+    public boolean updateRule(Rule targetRule) {
+    	return rb.updateRule(targetRule);
+    }
+
+    // 更新済みルールの取得
+    public ArrayList<Rule> getRules() {
+    	return rb.getRules();
+    }
+
+    // 更新済みアサーションの取得 // 多分要らない
+    public ArrayList<Assertion> getAssertions() {
+    	return rb.getWorkingMemory().getAssertions();
+    }
+
+    // 推論順に探索結果返却
+    public ArrayList<StepResult> getStepResults() {
+    	return rb.getStepResults();
+    }
+
+    // 検索を行い結果を返す(複数検索の場合は改良)
+    public ArrayList<String> searchAssertion(String target) {
+		RuleBaseSystem.question = true;
+		answer = new ArrayList<>();
+    	NaturalLanguage(target);
+		Matcher.answer = new ArrayList<>();
+		return answer;
+    }
+
+    /***
 	 *	NaturalLanguageメソッド
 	 *	引数 : 英語における自然言語の質問文「What is an Accord Wagon ?」
 	 *  return: 変数を含むパターン 「?x is an Accord Wagon」
 	 *  に置き換える
 	 */
-	public static void NaturalLanguage(String equestion) {
+	public void NaturalLanguage(String equestion) {
 		/***
 		 *	1. "英語の質問:s"を"変数含むパターン"に置き換える
 		 *	2. その"変数を含むパターン"を解析する:rb.backwardChain()を実行
@@ -124,7 +189,8 @@ public class RuleBaseSystem {
 			 *  3人称... They
 			 *
 			 **/
-			System.out.println("secondToken = " + secondToken);
+			//System.out.println("secondToken = " + secondToken);
+      
 			String s = secondToken.substring(secondToken.length()-1);
 			//System.out.println("s = " + s);
 
@@ -149,7 +215,8 @@ public class RuleBaseSystem {
 		patarn = patarn.replace("]", "");
 		patarn = patarn.replace(",", "");
 		//str = str.replace(" ?", "");	//ここで処理すると変数「?x」の?も消えちゃう
-		System.out.println("patarn = " + patarn);
+
+		//System.out.println("patarn = " + patarn);
 
 
 		//String patarn = "Ito's-Car is ?x";	//前件文の内容「RULEの後件部にないから,WMから見る」
@@ -220,6 +287,7 @@ public class RuleBaseSystem {
 			//解析
 			for(int i = 0; i < newWorkingMemory.size(); i++) {
 				(new Matcher()).matching(patarn, newWorkingMemory.get(i));
+				answer = Matcher.answer;
 			}
 		}
 
@@ -228,12 +296,14 @@ public class RuleBaseSystem {
 			boolean flag = false;
 			for(int i = 0; i < rb.wm.memorySize(); i ++) {
 				if((new Matcher()).matching(patarn, rb.wm.getValue(i))) {
-					System.out.println("答え = Yes");
+					//System.out.println("答え = Yes");
+					answer.add("Yes");
 					flag = true;
 				}
 			}
 			if(!flag) {
-				System.out.println("答え = No");
+				//System.out.println("答え = No");
+				answer.add("No");
 			}
 		}
 	}
@@ -245,10 +315,23 @@ public class RuleBaseSystem {
  *
  */
 class WorkingMemory {
-    ArrayList<String> assertions;
+    ArrayList<Assertion> assertions;
+    ArrayList<Assertion> add;
+    Assertion assertion;
 
     WorkingMemory(){
-        assertions = new ArrayList<String>();
+        assertions = new ArrayList<Assertion>();
+        add = new ArrayList<>();
+    }
+
+    //WMの数を取得
+    public int memorySize() {
+    	return assertions.size();
+    }
+
+    //WMの要素を取得
+    public String getValue(int i) {
+    	return assertions.get(i).getName();
     }
 
     //WMの数を取得
@@ -270,7 +353,13 @@ class WorkingMemory {
      */
     public ArrayList matchingAssertions(ArrayList<String> theAntecedents){
         ArrayList bindings = new ArrayList();
-        return matchable(theAntecedents,0,bindings);
+        add = new ArrayList<>();
+        ArrayList result = matchable(theAntecedents,0,bindings);
+        if (result == null) {
+        	add = new ArrayList<>();
+        }
+        return result;
+        //return matchable(theAntecedents,0,bindings);
     }
 
     private ArrayList matchable(ArrayList<String> theAntecedents,int n,ArrayList bindings){
@@ -282,10 +371,11 @@ class WorkingMemory {
                 HashMap<String,String> binding = new HashMap<String,String>();
                 if((new Matcher()).matching(
                     (String)theAntecedents.get(n),
-                    (String)assertions.get(i),
+                    (String)assertions.get(i).getName(),
                     binding)){
                     bindings.add(binding);
                     success = true;
+                    add.add(assertions.get(i));
                 }
             }
             if(success){
@@ -300,10 +390,11 @@ class WorkingMemory {
                 for(int j = 0 ; j < assertions.size() ; j++){
                     if((new Matcher()).matching(
                         (String)theAntecedents.get(n),
-                        (String)assertions.get(j),
+                        (String)assertions.get(j).getName(),
                         (HashMap)bindings.get(i))){
                         newBindings.add(bindings.get(i));
                         success = true;
+                        add.add(assertions.get(j));
                     }
                 }
             }
@@ -322,7 +413,10 @@ class WorkingMemory {
      */
     public void addAssertion(String theAssertion){
         System.out.println("ADD:"+theAssertion);
-        assertions.add(theAssertion);
+        //assertions.add(new Assertion(theAssertion));
+        assertion = new Assertion(theAssertion);
+        assertions.add(assertion);
+        //add.add(assertion);
     }
 
     /**
@@ -332,7 +426,18 @@ class WorkingMemory {
      * @return    含まれていれば true，含まれていなければ false
      */
     public boolean contains(String theAssertion){
-        return assertions.contains(theAssertion);
+    	int flag = 0;
+    	for (Assertion assertion : assertions) {
+    		if (assertion.getName().equals(theAssertion)) {
+    			flag++;
+    		}
+    	}
+    	if (flag <= 0) {
+    		return false;
+    	} else {
+    		return true;
+    	}
+        //return assertions.contains(theAssertion);
     }
 
     /**
@@ -341,13 +446,26 @@ class WorkingMemory {
      * @return    ワーキングメモリの情報を表す String
      */
     public String toString(){
-        return assertions.toString();
+        return assertions.toString(); // 恐らく使用できない
     }
 
+    public ArrayList<Assertion> getAssertions() {
+    	return assertions;
+    }
+
+    public ArrayList<Assertion> getAdd() {
+    	return add;
+    }
+
+    public Assertion getSuccess() {
+    	return assertion;
+    }
 }
 
 /**
  * ルールベースを表すクラス．
+ *
+ *
  */
 class RuleBase {
     String fileName;
@@ -355,8 +473,15 @@ class RuleBase {
     StreamTokenizer st;
     WorkingMemory wm;
     ArrayList<Rule> rules;
-
-    RuleBase(){
+    StepResult sr;
+    ArrayList<StepResult> srs;
+    ArrayList<Assertion> add;
+    ArrayList<Rule> apply;
+    Assertion success;
+    WorkingMemory cash;
+    Rule applyUnit;
+  
+  RuleBase(){
         fileName = "CarShop.data";
         wm = new WorkingMemory();
         wm.addAssertion("my-car is inexpensive");
@@ -367,6 +492,36 @@ class RuleBase {
         wm.addAssertion("my-car is a wagon");
         rules = new ArrayList<Rule>();
         loadRules(fileName);
+    }
+
+    RuleBase(ArrayList<String> firstAssertions, String fileName){
+        wm = new WorkingMemory();
+        for (String firstAssertion : firstAssertions) {
+        	wm.addAssertion(firstAssertion);
+        }
+        rules = new ArrayList<Rule>();
+        loadRules(fileName);
+        srs = new ArrayList<StepResult>();
+        add = new ArrayList<>();
+        apply = new ArrayList<>();
+        cash = new WorkingMemory();
+        applyUnit = null;
+    }
+
+    RuleBase(ArrayList<String> assertions, ArrayList<Rule> rules) {
+    	wm = new WorkingMemory();
+    	for (String assertion : assertions) {
+        	wm.addAssertion(assertion);
+        }
+    	this.rules = rules;
+    	for(int i = 0 ; i < rules.size() ; i++){
+            System.out.println(((Rule)rules.get(i)).toString());
+        }
+    	srs = new ArrayList<StepResult>();
+        add = new ArrayList<>();
+        apply = new ArrayList<>();
+        cash = new WorkingMemory();
+        applyUnit = null;
     }
 
     //public ArrayList memory() {
@@ -385,6 +540,7 @@ class RuleBase {
             for(int i = 0 ; i < rules.size(); i++){
                 Rule aRule = (Rule)rules.get(i);
                 System.out.println("apply rule:"+aRule.getName());
+                apply.add(aRule);
                 ArrayList<String> antecedents = aRule.getAntecedents();
                 String consequent  = aRule.getConsequent();
                 //HashMap bindings = wm.matchingAssertions(antecedents);
@@ -398,15 +554,41 @@ class RuleBase {
                         //ワーキングメモリーになければ成功
                         if(!wm.contains(newAssertion)){
                             System.out.println("Success: "+newAssertion);
+                            add = wm.getAdd();
                             wm.addAssertion(newAssertion);
+                            success = wm.getSuccess();
+                            applyUnit = apply.get(apply.size() - 1);
+                            sr = new StepResult(add, applyUnit, success);
+                            srs.add( sr );
+                            apply = new ArrayList<>();
+                            applyUnit = null;
+                            success = null;
                             newAssertionCreated = true;
                         }
                     }
                 }
             }
-            System.out.println("Working Memory"+wm);
+            System.out.println("Working Memory"+printWorkingMemory(wm));
+            if (wm != cash) {
+            	apply = new ArrayList<>();
+            	cash = new WorkingMemory();
+                cash = wm;
+            }
         } while(newAssertionCreated);
         System.out.println("No rule produces a new assertion");
+    }
+
+    private String printWorkingMemory(WorkingMemory wm) {
+    	ArrayList<Assertion> wmA = wm.getAssertions();
+    	StringBuffer buf = new StringBuffer();
+    	buf.append("[");
+    	for (int i = 0; i < wmA.size()-1; i++) {
+    		buf.append(wmA.get(i).getName());
+    		buf.append(", ");
+    	}
+    	buf.append(wmA.get(wmA.size()-1).getName());
+    	buf.append("]");
+    	return buf.toString();
     }
 
     private String instantiate(String thePattern, HashMap theBindings){
@@ -471,22 +653,38 @@ class RuleBase {
             System.out.println(e);
         }
         for(int i = 0 ; i < rules.size() ; i++){
-            System.out.println(((Rule)rules.get(i)).toString());
+        	System.out.println(((Rule)rules.get(i)).toString());
         }
     }
 
+    public ArrayList<Rule> getRules() {
+    	return rules;
+    }
+
+    public WorkingMemory getWorkingMemory() {
+    	return wm;
+    }
+
+    public ArrayList<StepResult> getStepResults() {
+    	return srs;
+    }
+
     // データ挿入用メソッド
-    public void insertRule(Rule targetRule) {
+    public boolean insertRule(Rule targetRule) {
+    	boolean add = true;
         rules.add(targetRule);
         try {
             writeFile();
         } catch(IOException e) {
+        	add = false;
             System.out.println(e.toString());
         }
+        return add;
     }
 
     // データ削除用メソッド
-    public void deleteRule(Rule targetRule) {
+    public boolean deleteRule(Rule targetRule) {
+    	boolean delete = true;
         for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
             if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
                 rules.remove(ruleNum);
@@ -495,12 +693,15 @@ class RuleBase {
         try {
             writeFile();
         } catch(IOException e) {
+        	delete = false;
             System.out.println(e.toString());
         }
+        return delete;
     }
 
     // データ更新用メソッド
-    public void updateRule(Rule targetRule) {
+    public boolean updateRule(Rule targetRule) {
+    	boolean update = true;
         for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
             if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
                 rules.set(ruleNum, targetRule);
@@ -509,12 +710,15 @@ class RuleBase {
         try {
             writeFile();
         } catch(IOException e) {
+           	update = false;
             System.out.println(e.toString());
         }
+        return update;
     }
 
     // ファイル更新用メソッド
     private void writeFile() throws IOException {
+    	String fileName = RuleBaseSystem.fileName;
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, false), "UTF-8"));
 
         for(Rule rule: rules) {
@@ -543,14 +747,17 @@ class RuleBase {
  *
  */
 class Rule {
+	static int counter = 0;
     String name;
     ArrayList<String> antecedents;
     String consequent;
+    int id;
 
     Rule(String theName,ArrayList<String> theAntecedents,String theConsequent){
         this.name = theName;
         this.antecedents = theAntecedents;
         this.consequent = theConsequent;
+        id = counter++;
     }
 
     /**
@@ -589,12 +796,99 @@ class Rule {
         return consequent;
     }
 
+    /**
+     * ルールのidを返す．
+     *
+     * @return    通し番号を表す int
+     */
+    public int getId(){
+        return id;
+    }
+}
+
+/**
+ * アサーションを表すクラス．
+ *
+ *
+ */
+class Assertion {
+	static int counter = 0;
+	String name;
+	int id;
+
+	Assertion(String theName){
+        this.name = theName;
+        id = counter++;
+    }
+
+	/**
+     * アサーションをString形式で返す．
+     *
+     * @return    本体を表す String
+     */
+    public String getName(){
+        return name;
+    }
+
+    /**
+     * アサーションのidを返す．
+     *
+     * @return    通し番号を表す id
+     */
+    public int getId(){
+        return id;
+    }
+}
+
+/**
+ * 各ステップごとの結果を表すクラス．
+ *
+ *
+ */
+class StepResult {
+	private ArrayList<Assertion> add;
+	private Rule apply;
+	private Assertion success;
+
+	StepResult(ArrayList<Assertion> theAdd, Rule theApply, Assertion theSuccess){
+        this.add = theAdd;
+        this.apply = theApply;
+        this.success = theSuccess;
+    }
+
+	/**
+     * アサーションをArrayList形式で返す．
+     *
+     * @return    本体を表す ArrayList<Assertion>
+     */
+    public ArrayList<Assertion> getAdd(){
+        return add;
+    }
+
+	/**
+     * ルールをArrayList形式で返す．
+     *
+     * @return    本体を表す ArrayList<Rule>
+     */
+    public Rule getApply(){
+        return apply;
+    }
+
+	/**
+     * アサーションをAssertion形式で返す．
+     *
+     * @return    本体を表す Assertion
+     */
+    public Assertion getSuccess(){
+        return success;
+    }
 }
 
 class Matcher {
     StringTokenizer st1;
     StringTokenizer st2;
     HashMap<String,String> vars;
+    static ArrayList<String> answer = new ArrayList<>();;
 
     Matcher(){
         vars = new HashMap<String,String>();
@@ -649,7 +943,10 @@ class Matcher {
         } else {
             vars.put(vartoken,token);
         }
-        System.out.println("答え = " + token);
+        if (RuleBaseSystem.question == true) {
+        	//System.out.println("答え = " + token);
+        	answer.add(token);
+        }
         return true;
     }
 
@@ -658,4 +955,7 @@ class Matcher {
         return str1.startsWith("?");
     }
 
+    ArrayList<String> getAnswer() {
+    	return answer;
+    }
 }

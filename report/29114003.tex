@@ -1,0 +1,172 @@
+\documentclass[12pt]{jarticle}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{url}
+\usepackage{listings,jlisting}
+\usepackage{ascmac}
+\usepackage{amsmath,amssymb}
+
+%ここからソースコードの表示に関する設定
+\lstset{
+  basicstyle={\ttfamily},
+  identifierstyle={\small},
+  commentstyle={\smallitshape},
+  keywordstyle={\small\bfseries},
+  ndkeywordstyle={\small},
+  stringstyle={\small\ttfamily},
+  frame={tb},
+  breaklines=true,
+  columns=[l]{fullflexible},
+  numbers=left,
+  xrightmargin=0zw,
+  xleftmargin=3zw,
+  numberstyle={\scriptsize},
+  stepnumber=1,
+  numbersep=1zw,
+  lineskip=-0.5ex
+}
+%ここまでソースコードの表示に関する設定
+
+\title{知能プログラミング演習II 課題4}
+\author{グループ8\\
+  29114003 青山周平\\
+}
+\date{2019年11月11日}
+
+\begin{document}
+\maketitle
+
+\paragraph{提出物} work4
+\paragraph{グループ} グループ8
+\paragraph{メンバー}
+\begin{tabular}{|c|c|c|}
+  \hline
+  学生番号&氏名&貢献度比率\\
+  \hline\hline
+  29114003&青山周平&20\\
+  \hline
+  29114060&後藤拓也&20\\
+  \hline
+  29114116&増田大輝&20\\
+  \hline
+  29114142&湯浅範子&20\\
+  \hline
+  29119016&小中祐希&20\\
+  \hline
+\end{tabular}
+
+
+
+\section{課題の説明}
+\begin{description}
+\item[必須課題4-1] まず，教科書3.2.1の「前向き推論」のプログラムと教科書3.2.2の「後向き推論」のプログラムとの動作確認をし，前向き推論と後ろ向き推論の違いを説明せよ．また，実行例を示してルールが選択される過程を説明せよ．説明の際には，LibreOfficeのDraw（コマンド soffice --draw）などのドロー系ツールを使ってp.106 図3.11やp.118 図3.12のような図として示すことが望ましい．
+\item[必須課題4-2] CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用事例（自分達の興味分野で良い）に書き換えて，前向き推論，および後ろ向き推論に基づく質問応答システムを作成せよ．どのような応用事例を扱うかは，メンバーで話し合って決めること．
+なお，ユーザの質問は英語や日本語のような自然言語が望ましいが，難しければ変数を含むパターン等でも可とする．
+\item[必須課題4-3] 上記4-2で実装した質問応答システムのGUIを作成せよ．
+質問に答える際の推論過程を可視化できることが望ましい．
+\item[発展課題4-4] 上記4-3で実装したGUIを発展させ，質問応答だけでなく，ルールの編集（追加，削除，変更）などについてもGUIで行えるようにせよ．
+\end{description}
+
+\section{必須課題4-3}
+\begin{screen}
+上記4-2で実装した質問応答システムのGUIを作成せよ．
+質問に答える際の推論過程を可視化できることが望ましい．
+\end{screen}
+私の担当箇所は，必須課題4-3におけるGUIの，Swingによる実装である．
+
+\subsection{手法}
+まず，前向き推論のためのGUIを実装するにあたり，以下のような方針を立てた．
+\begin{enumerate}
+\item 推論のルール・推論結果を受け取る．
+\item 推論過程を可視化するためのパネルを作る．
+\item 検索の機能を追加し，検索結果を推論過程のパネルに可視化する．
+\end{enumerate}
+
+1．に関して，MVPアーキテクチャを導入し，Presenterを他の班員に作ってもらい，それを介してデータを受け取ることで，ModelであるRuleBaseSystem.javaとの独立性の高いGUIを設計できるような仕様とした．
+
+２．に関して，表示パーツの部品化や配置を工夫することで，ユーザにとって統一的な表示がなされるように心がけた．
+
+３．に関して，検索に対応するよう推論過程の表示を更新することで，ユーザに必要な推論結果が直感的に分かるような仕様とした． \\
+
+次に，後向き推論のためのGUIを実装するにあたり，以下のような方針を立てた．
+\begin{enumerate}
+\item 前向き推論のクラスを部品化して活用する．
+
+\end{enumerate}
+
+1．に関して，前向き推論で制作したFwdChainTableクラスをChainTableクラスで抽象化することで，プログラム全体の多層化を高めた．また，これにより前向き推論と後向き推論の互換性を高めることによって，プログラム全体がまとまりを持つような仕様とした．
+
+\subsection{実装}
+セマンティックネットのGUIに関するプログラムSemNetGUI.javaには以下のクラスが含まれる．
+\begin{description}
+\item[FwdChainGUI] メソッドmain, クラスMenuPanelを実装した，フレームとメニューバーを実装するためのクラス．
+\item[FwdChainTable] 前向き推論のアサーション・ルール・過程などを管理・表示するパネルを実装するためのクラス．
+
+\end{description}
+
+後向き推論のGUIに関するプログラムBwdChainGUI.javaには以下のクラスが含まれる．
+\begin{description}
+\item[BwdChainGUI] メソッドmain, クラスMenuPanelを実装した，フレームとメニューバーを実装するためのクラス．
+\item[BwdChainTable] 後向き推論のアサーション・ルール・過程などを管理・表示するパネルを実装するためのクラス．
+
+\end{description}
+
+\subsubsection{推論のルール・推論結果を受け取る}
+
+\subsubsection{ルールの一覧表示と更新を行うためのメニューパネルを作る}
+
+
+\clearpage
+
+\subsection{実行例}
+
+\clearpage
+
+\subsection{考察}
+
+
+\section{発展課題4-4}
+\begin{screen}
+上記4-3で実装したGUIを発展させ，質問応答だけでなく，ルールの編集（追加，削除，変更）などについてもGUIで行えるようにせよ．
+\end{screen}
+私の担当箇所は，発展課題4-4におけるルールの編集機能の，Swingによる実装である．
+
+\subsection{手法}
+ルールの編集機能を実装するにあたり，以下のような方針を立てた．
+\begin{enumerate}
+\item ルールの一覧表示と編集のためのメニューパネルを作る．
+\item 追加・更新のためのパネルを作る．
+\item 編集したルールを反映する．
+\end{enumerate}
+
+１．に関して，JListクラスを用いてルールの一覧表示を行うことで，ユーザが更新・削除したいルールの選択を視覚的に行えるような仕様とした．
+
+２．に関して，追加・更新のための専用のパネルを用意することで，直感的な編集操作を行えるような仕様とした．
+
+３．に関して，Presenterを介して反映を行った．
+
+\subsection{実装}
+実装に関連するプログラムは，必須課題4-3と同様である．
+
+\subsubsection{ルールの一覧表示と編集のためのメニューパネルを作る}
+
+\subsubsection{追加・更新のためのパネルを作る}
+
+\subsubsection{編集したルールを反映する}
+
+\clearpage
+
+\subsection{実行例}
+
+\clearpage
+
+\subsection{考察}
+
+\section{感想}
+
+
+% 参考文献
+\begin{thebibliography}{99}
+TATSUO IKURA： 『Swingを使ってみよう - Java GUIプログラミング』 https://www.javadrive.jp/tutorial/ (2019/11/18アクセス) \\
+\end{thebibliography}
+
+\end{document}
