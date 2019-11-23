@@ -35,6 +35,7 @@ public class RuleBaseSystem {
 		    System.out.println("質問内容 = " + englishQuestion);
 
 		    //質問応答メソッド&解析
+			
 		    NaturalLanguage(englishQuestion);
 
 		    System.out.print("もう１回? 1...Yes/ 0...No ");
@@ -332,16 +333,6 @@ class WorkingMemory {
     //WMの要素を取得
     public String getValue(int i) {
     	return assertions.get(i).getName();
-    }
-
-    //WMの数を取得
-    public int memorySize() {
-    	return assertions.size();
-    }
-
-    //WMの要素を取得
-    public String getValue(int i) {
-    	return assertions.get(i);
     }
 
     /**
