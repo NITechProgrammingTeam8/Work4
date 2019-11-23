@@ -1,6 +1,14 @@
-import java.util.*;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.*;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StreamTokenizer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Scanner;
+import java.util.StringTokenizer;
 
 /**
  * RuleBaseSystem
@@ -12,6 +20,9 @@ public class RuleBaseSystem {
     static String fileName;
     static boolean question;
     ArrayList<String> answer;
+    ArrayList<String> answerString;
+    SearchStep ss;
+    ArrayList<SearchStep> sss;
 
 	// コンストラクタ
 	RuleBaseSystem () {
@@ -28,6 +39,9 @@ public class RuleBaseSystem {
 		Scanner stdIn2 = new Scanner(System.in);	//数値読み込み
 		int returnFlag = 0;
 		do {
+			RuleBaseSystem NL = new RuleBaseSystem();
+	        NL.answer = new ArrayList<>();
+	        NL.answerString = new ArrayList<>();
 		    //ここの仮説の部分を変更します
 			System.out.println("質問を入力してください");
 			String englishQuestion = stdIn1.nextLine();
@@ -35,9 +49,11 @@ public class RuleBaseSystem {
 		    System.out.println("質問内容 = " + englishQuestion);
 
 		    //質問応答メソッド&解析
-			
-		    NaturalLanguage(englishQuestion);
-
+		    question = true;
+		    NL.NaturalLanguage(englishQuestion);
+		    for (int i = 0; i < NL.answer.size(); i++) {
+		    	System.out.println("答え = " + NL.answer.get(i));
+		    }
 		    System.out.print("もう１回? 1...Yes/ 0...No ");
 		    returnFlag = stdIn2.nextInt();
 		    //rb.qFlag = 0;
@@ -46,7 +62,6 @@ public class RuleBaseSystem {
 
     // ここで全クラス＆メソッドを管理
     public void start(ArrayList<String> firstAssertions, String fileName) {
-    	//System.out.println("仮");
     	RuleBaseSystem.question = false;
     	rb = new RuleBase(firstAssertions, fileName);
         rb.forwardChain();
@@ -80,7 +95,7 @@ public class RuleBaseSystem {
     	return rb.getRules();
     }
 
-    // 更新済みアサーションの取得 // 多分要らない
+    // 更新済みアサーションの取得
     public ArrayList<Assertion> getAssertions() {
     	return rb.getWorkingMemory().getAssertions();
     }
@@ -91,12 +106,40 @@ public class RuleBaseSystem {
     }
 
     // 検索を行い結果を返す(複数検索の場合は改良)
-    public ArrayList<String> searchAssertion(String target) {
+    public ArrayList<SearchStep> searchAssertion(String target) {
 		RuleBaseSystem.question = true;
 		answer = new ArrayList<>();
+		answerString = new ArrayList<>();
+		sss = new ArrayList<>();
+		List<StepResult> subSRs = new ArrayList<>();
     	NaturalLanguage(target);
+    	for (int i = 0; i < answer.size(); i++) {
+    		if (answerString.size() > 0) {
+    			subSRs = searchSRs(answerString.get(i));
+    			ss = new SearchStep(answer.get(i), subSRs);
+    		} else {
+    			ss = new SearchStep(answer.get(i), null);
+    		}
+    		sss.add(ss);
+    		subSRs = new ArrayList<>();
+    	}
 		Matcher.answer = new ArrayList<>();
-		return answer;
+		Matcher.answerString = new ArrayList<>();
+		return sss;
+    }
+
+    public List<StepResult> searchSRs(String answerS) {
+    	ArrayList<StepResult> SRs = getStepResults();
+    	List<StepResult> subSRs = new ArrayList<>();
+    	int target = -1;
+    	for (int i = 0; i < SRs.size(); i++) {
+    		String success = SRs.get(i).getSuccess().getName();
+    		if (success.equals(answerS)) {
+    			target = i;
+    		}
+    	}
+    	subSRs = SRs.subList(0, target+1);
+    	return subSRs;
     }
 
     /***
@@ -191,7 +234,7 @@ public class RuleBaseSystem {
 			 *
 			 **/
 			//System.out.println("secondToken = " + secondToken);
-      
+
 			String s = secondToken.substring(secondToken.length()-1);
 			//System.out.println("s = " + s);
 
@@ -289,6 +332,7 @@ public class RuleBaseSystem {
 			for(int i = 0; i < newWorkingMemory.size(); i++) {
 				(new Matcher()).matching(patarn, newWorkingMemory.get(i));
 				answer = Matcher.answer;
+				answerString = Matcher.answerString;
 			}
 		}
 
@@ -299,6 +343,7 @@ public class RuleBaseSystem {
 				if((new Matcher()).matching(patarn, rb.wm.getValue(i))) {
 					//System.out.println("答え = Yes");
 					answer.add("Yes");
+					answerString.add(rb.wm.getValue(i));
 					flag = true;
 				}
 			}
@@ -437,7 +482,7 @@ class WorkingMemory {
      * @return    ワーキングメモリの情報を表す String
      */
     public String toString(){
-        return assertions.toString(); // 恐らく使用できない
+        return assertions.toString();
     }
 
     public ArrayList<Assertion> getAssertions() {
@@ -471,7 +516,7 @@ class RuleBase {
     Assertion success;
     WorkingMemory cash;
     Rule applyUnit;
-  
+
   RuleBase(){
         fileName = "CarShop.data";
         wm = new WorkingMemory();
@@ -483,6 +528,11 @@ class RuleBase {
         wm.addAssertion("my-car is a wagon");
         rules = new ArrayList<Rule>();
         loadRules(fileName);
+        srs = new ArrayList<StepResult>();
+        add = new ArrayList<>();
+        apply = new ArrayList<>();
+        cash = new WorkingMemory();
+        applyUnit = null;
     }
 
     RuleBase(ArrayList<String> firstAssertions, String fileName){
@@ -875,11 +925,45 @@ class StepResult {
     }
 }
 
+/**
+ * 探索結果のステップ結果を表すクラス．
+ *
+ *
+ */
+class SearchStep {
+	private String kekka;
+	private List<StepResult> keiro;
+
+	SearchStep(String theKekka, List<StepResult> theKeiro){
+        this.kekka = theKekka;
+        this.keiro = theKeiro;
+    }
+
+	/**
+     * 結果をString形式で返す．
+     *
+     * @return    本体を表す String
+     */
+    public String getKekka(){
+        return kekka;
+    }
+
+	/**
+     * ルールをArrayList形式で返す．
+     *
+     * @return    本体を表す ArrayList<StepResult>
+     */
+    public List<StepResult> getKeiro(){
+        return keiro;
+    }
+}
+
 class Matcher {
     StringTokenizer st1;
     StringTokenizer st2;
     HashMap<String,String> vars;
-    static ArrayList<String> answer = new ArrayList<>();;
+    static ArrayList<String> answer = new ArrayList<>();
+    static ArrayList<String> answerString = new ArrayList<>();
 
     Matcher(){
         vars = new HashMap<String,String>();
@@ -895,7 +979,9 @@ class Matcher {
         //System.out.println(string2);
 
         // 同じなら成功
-        if(string1.equals(string2)) return true;
+        if(string1.equals(string2)) {
+        	return true;
+        }
 
         // 各々トークンに分ける
         st1 = new StringTokenizer(string1);
@@ -913,6 +999,9 @@ class Matcher {
         }
 
         // 最後まで O.K. なら成功
+        if (RuleBaseSystem.question == true) {
+        	answerString.add(string2);
+        }
         return true;
     }
 
@@ -935,7 +1024,6 @@ class Matcher {
             vars.put(vartoken,token);
         }
         if (RuleBaseSystem.question == true) {
-        	//System.out.println("答え = " + token);
         	answer.add(token);
         }
         return true;
@@ -948,5 +1036,9 @@ class Matcher {
 
     ArrayList<String> getAnswer() {
     	return answer;
+    }
+
+    ArrayList<String> getAnswerString() {
+    	return answerString;
     }
 }

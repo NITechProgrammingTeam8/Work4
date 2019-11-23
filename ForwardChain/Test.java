@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.List;
 
 /*
  * Presenter動作確認用ファイル
@@ -24,9 +25,6 @@ class Test {
 			ArrayList<Assertion> add = stepresult.getAdd();
 			Rule apply = stepresult.getApply();
 			Assertion success = stepresult.getSuccess();
-			//System.out.println("add size:" + add.size());
-			//System.out.println("apply size:" + apply.size());
-			//System.out.println("success size:" + success.size());
 			if (add.size() > 0) {
 				for (Assertion addunit : add) {
 					System.out.println("◆ADD: " + addunit.getName());
@@ -47,24 +45,54 @@ class Test {
 			System.out.println();
 		}
 
-		// とりあえず要素一つで複数検索はしない
 		ArrayList<String> targetData = new ArrayList<>();
-		targetData.add("Is my car inexpensive ?");
-		ArrayList<ArrayList<String>> resultLists = presenter.searchAssertion(targetData);
-		for (int i = 0; i < resultLists.size(); i++) {
-			System.out.println("検索質問：" + targetData.get(i));
-			for (int k = 0; k < resultLists.get(i).size(); k++) {
-				System.out.println("答え = " + resultLists.get(i).get(k));
-			}
-			System.out.println();
-		}
-		targetData = new ArrayList<>();
+		targetData.add("Is my car a Honda ?");
+		targetData.add("What does she car have ?");
 		targetData.add("What does my car have ?");
-		resultLists = presenter.searchAssertion(targetData);
+		targetData.add("Is my car a Toyota ?");
+		ArrayList<ArrayList<SearchStep>> resultLists = presenter.searchAssertion(targetData);
 		for (int i = 0; i < resultLists.size(); i++) {
 			System.out.println("検索質問：" + targetData.get(i));
-			for (int k = 0; k < resultLists.get(i).size(); k++) {
-				System.out.println("答え = " + resultLists.get(i).get(k));
+			if (resultLists.get(i).size() != 0) {
+				for (int k = 0; k < resultLists.get(i).size(); k++) {
+					if (!(resultLists.get(i).get(k).getKekka().equals("No"))) {
+						System.out.println("答え = " + resultLists.get(i).get(k).getKekka());
+						List<StepResult> keiro = resultLists.get(i).get(k).getKeiro();
+						if (keiro.size() != 0) {
+							System.out.println("Data is new WM");
+							for (StepResult unitKeiro : keiro) {
+								ArrayList<Assertion> add = unitKeiro.getAdd();
+								Rule apply = unitKeiro.getApply();
+								Assertion success = unitKeiro.getSuccess();
+								if (add.size() > 0) {
+									for (Assertion addunit : add) {
+										System.out.println("■ADD: " + addunit.getName());
+									}
+								} else {
+									System.out.println("■ADD: No data");
+								}
+								if (apply != null) {
+									System.out.println("◇apply rule: " + apply.getName());
+								} else {
+									System.out.println("◇apply rule: No rule");
+								}
+								if (success != null) {
+									System.out.println("◆success: " + success.getName());
+								} else {
+									System.out.println("◆success: No data");
+								}
+							}
+						} else {
+							System.out.println("Data is initial WM");
+						}
+					} else {
+						System.out.println("答え = " + resultLists.get(i).get(k).getKekka());
+						System.out.println("No Data");
+					}
+				}
+			} else {
+				System.out.println("答え = ");
+				System.out.println("No Data");
 			}
 			System.out.println();
 		}
@@ -155,7 +183,6 @@ class Test {
 			ArrayList<Assertion> add = stepresult.getAdd();
 			Rule apply = stepresult.getApply();
 			Assertion success = stepresult.getSuccess();
-
 			if (add.size() > 0) {
 				for (Assertion addunit : add) {
 					System.out.println("【再】◆ADD: " + addunit.getName());
@@ -181,15 +208,50 @@ class Test {
 		resultLists = presenter.searchAssertion(targetData);
 		for (int i = 0; i < resultLists.size(); i++) {
 			System.out.println("検索質問：" + targetData.get(i));
-			for (int k = 0; k < resultLists.get(i).size(); k++) {
-				System.out.println("答え = " + resultLists.get(i).get(k));
+			if (resultLists.get(i).size() != 0) {
+				for (int k = 0; k < resultLists.get(i).size(); k++) {
+					//System.out.println("●" + resultLists.get(i).get(k).getKekka());
+					if (!(resultLists.get(i).get(k).getKekka().equals("No"))) {
+						System.out.println("答え = " + resultLists.get(i).get(k).getKekka());
+						List<StepResult> keiro = resultLists.get(i).get(k).getKeiro();
+						//System.out.println("( ;∀;)" + keiro);
+						if (keiro.size() != 0) {
+							System.out.println("Data is new WM");
+							for (StepResult unitKeiro : keiro) {
+								ArrayList<Assertion> add = unitKeiro.getAdd();
+								Rule apply = unitKeiro.getApply();
+								Assertion success = unitKeiro.getSuccess();
+								if (add.size() > 0) {
+									for (Assertion addunit : add) {
+										System.out.println("■ADD: " + addunit.getName());
+									}
+								} else {
+									System.out.println("■ADD: No data");
+								}
+								if (apply != null) {
+									System.out.println("◇apply rule: " + apply.getName());
+								} else {
+									System.out.println("◇apply rule: No rule");
+								}
+								if (success != null) {
+									System.out.println("◆success: " + success.getName());
+								} else {
+									System.out.println("◆success: No data");
+								}
+							}
+						} else {
+							System.out.println("Data is initial WM");
+						}
+					} else {
+						System.out.println("答え = " + resultLists.get(i).get(k).getKekka());
+						System.out.println("No Data");
+					}
+				}
+			} else {
+				System.out.println("答え = ");
+				System.out.println("No Data");
 			}
 			System.out.println();
 		}
 	}
-
-	// いまできること
-	/*
-	 * 検索結果に対する推論手順の出力以外は完了しているはず
-	 */
 }
