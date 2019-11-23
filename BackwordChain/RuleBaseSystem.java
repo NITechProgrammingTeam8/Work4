@@ -1,35 +1,166 @@
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 public class RuleBaseSystem {
     static RuleBase rb;
     static FileManager fm;
-
+    static String name;
     public static void main(String args[]){
-	if(args.length != 1){
-	    System.out.println("Usage: %java RuleBaseSystem [query strings]");
-	    System.out.println("Example:");
-	    System.out.println(" \"?x is b\" and \"?x is c\" are queries");
-	    System.out.println("  %java RuleBaseSystem \"?x is b,?x is c\"");
-	} else {
-	    fm = new FileManager();
-	    ArrayList<Rule> rules = fm.loadRules("CarShop.data");
-	    //ArrayList rules = fm.loadRules("AnimalWorld.data");
-	    ArrayList<String> wm    = fm.loadWm("CarShopWm.data");
-	    //ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
-	    rb = new RuleBase(rules,wm);
-	    StringTokenizer st = new StringTokenizer(args[0],",");
+
+/*		if(args.length != 1){
+		    System.out.println("Usage: %java RuleBaseSystem [query strings]");
+		    System.out.println("Example:");
+		    System.out.println(" \"?x is b\" and \"?x is c\" are queries");
+		    System.out.println("  %java RuleBaseSystem \"?x is b,?x is c\"");
+		} else {
+*/
+		    fm = new FileManager();
+		    ArrayList<Rule> rules = fm.loadRules("CarShop.data");	//ファイルからルールの読み取り
+		    //ArrayList rules = fm.loadRules("AnimalWorld.data");
+		    ArrayList<String> wm    = fm.loadWm("CarShopWm.data");	//ファイルからワーキングメモリの読み取り
+		    //ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
+		    rb = new RuleBase(rules,wm);		//ルールベースの構築
+
+			Scanner stdIn1 = new Scanner(System.in);	//文字列読み込み
+			Scanner stdIn2 = new Scanner(System.in);	//数値読み込み
+			int returnFlag = 0;
+			do {
+			    //ここの仮説の部分を変更します
+				System.out.println("質問を入力してください");
+				String englishQuestion = stdIn1.nextLine();
+			    //String s = args[0];		//質問英語を入力
+			    System.out.println("質問内容 = " + englishQuestion);
+
+			    //質問応答メソッド&解析
+			    NaturalLanguage(englishQuestion);
+
+			    System.out.print("もう１回? 1...Yes/ 0...No ");
+			    returnFlag = stdIn2.nextInt();
+			    rb.qFlag = 0;
+			}while(returnFlag == 1);
+		}
+//    }
+
+    /***
+     *	NaturalLanguageメソッド
+     *	引数 : 英語における自然言語の質問文「What is an Accord Wagon ?」
+     *  return: 変数を含むパターン 「?x is an Accord Wagon」
+     *  に置き換える
+     */
+    public static void NaturalLanguage(String equestion) {
+    	/***
+    	 *	1. "英語の質問:s"を"変数含むパターン"に置き換える
+    	 *	2. その"変数を含むパターン"を解析する:rb.backwardChain()を実行
+    	 */
+    	//解
+    	ArrayList<String> tokenList = new ArrayList<>();
+    	//今どこを指しているか
+    	int tokenPoint = 0;
+
+    	//前処理
+    	/**
+    	 * 「What color is his car?」と
+    	 * 「What color is Ito's car?」の違いをしっかりいきたい!
+    	 */
+    	if(equestion.contains("'s c")) {
+    		equestion = equestion.replace("'s c", "'s-C");
+    	}
+    	else if(equestion.contains("his")) {
+    		equestion = equestion.replace("his c", "his-c");
+    	}
+
+    	//1.まずはトークンに分解して,
+    	StringTokenizer stoken = new StringTokenizer(equestion);
+    	//  トークンの数を保存
+    	int tokenSize = stoken.countTokens() - 1;	//最後の?は除くからね！
+
+    	//2.いろいろいじって,
+    	/***
+    	 *  注意1)今回は前回と違って,3つ(Head,Tail,Label)に当てはめればいいわけじゃないから
+    	 *  注意2)aかanかだいぶ変わるな
+    	 */
+    	String firstToken = stoken.nextToken();
+    	tokenPoint ++;
+    	String secondToken = stoken.nextToken();
+    	tokenPoint ++;
+    	if(firstToken.equals("Is")) {
+    		tokenList.add(secondToken);
+    		tokenList.add("is");
+    	}
+    	else if(firstToken.equals("What")) {
+    		rb.qFlag = 1;
+    		if(secondToken.equals("color")) {
+    			String thirdToken = stoken.nextToken();
+    			tokenPoint ++;
+    			tokenList.add(stoken.nextToken());
+    			tokenPoint ++;
+    			tokenList.add(thirdToken);
+    			tokenList.add(" ?x");
+    		}
+    		else if(secondToken.equals("does")) {
+    			tokenList.add(stoken.nextToken());
+    			tokenPoint ++;
+    			String thirdToken = stoken.nextToken();
+    			tokenPoint ++;
+    			if(thirdToken.equals("have")) {
+    				tokenList.add("has");
+    			}
+    			tokenList.add("?x");
+    		}
+    		else if(secondToken.equals("is")) {
+    			tokenList.add("?x");
+    			tokenList.add("is");
+    		}
+    	}
+    	else if(firstToken.equals("Does")) {
+    		String thirdToken = stoken.nextToken();
+    		tokenPoint ++;
+    		//三単現のs
+    		if(thirdToken.equals("have")) {
+    			thirdToken = "has";
+    		}
+    		else {
+    			thirdToken = thirdToken.replace(thirdToken, thirdToken+"s");
+    		}
+    		tokenList.add(secondToken);
+    		tokenList.add(thirdToken);
+    	}
+
+    	//3.toStringで最後に合体させる(今回はあくまでStrigの文字列にしないといけないのだ.)
+    	//  格納
+    	for(int i = tokenPoint; i < tokenSize; i++) {
+    		tokenList.add(stoken.nextToken());
+    	}
+    	//  ArrayList → String文字へ
+    	String patarn = tokenList.toString();
+    	patarn = patarn.replace("[", "");
+    	patarn = patarn.replace("]", "");
+    	patarn = patarn.replace(",", "");
+    	//str = str.replace(" ?", "");	//ここで処理すると変数「?x」の?も消えちゃう
+    	System.out.println("patarn = " + patarn);
+
+
+    	//String patarn = "Ito's-Car is ?x";	//前件文の内容「RULEの後件部にないから,WMから見る」
+    	//String patarn = "?x is a Ferrari F50";		//後件文の内容「RULEを見て,WMを見る」
+
+    	//解析
+	    StringTokenizer patarns = new StringTokenizer(patarn,",");
 	    ArrayList<String> queries = new ArrayList<String>();
-	    for(int i = 0 ; i < st.countTokens();){
-		queries.add(st.nextToken());
+	    for(int i = 0 ; i < patarns.countTokens();){
+	    	queries.add(patarns.nextToken());
+	    	System.out.println("queries = " + queries);
 	    }
-	    rb.backwardChain(queries);
-	}
+	    rb.backwardChain(queries);	//ここのqueriesはStringの文字列
     }
 
     public ArrayList<StepResult> stepResult(String filename, String wmname, String target) {
@@ -70,38 +201,22 @@ public class RuleBaseSystem {
 
 class RuleBase implements Serializable{
     String fileName;
+    String myName;	//これ追加
+    int qFlag;	//疑問詞判定フラグ
     ArrayList<String> wm;
     ArrayList<Rule> rules;
 
-    Rule questionField = null;
-    Rule answerField = null;
-    String question = null;
-    String answer = null;
-    Rule sub = null;
-    ArrayList<Rule> subs;
-    ArrayList<StepResult> srs;
-    StepResult sr = new StepResult();
-    int miss;
-    int overwrite;
-    ArrayList<String> targets;
-
     RuleBase(ArrayList<Rule> theRules,ArrayList<String> theWm){
-	wm = theWm;
-	rules = theRules;
-	srs = new ArrayList<>();
-	targets = new ArrayList<>();
-	miss = 0;
-	overwrite = 100000;
-	sr.shokika();
-	subs = new ArrayList<>();
+    	wm = theWm;
+    	rules = theRules;
     }
 
     public void setWm(ArrayList<String> theWm){
-	wm = theWm;
+    	wm = theWm;
     }
 
     public void setRules(ArrayList<Rule> theRules){
-	rules = theRules;
+    	rules = theRules;
     }
 
     public ArrayList<Rule> getRules() {
@@ -109,26 +224,38 @@ class RuleBase implements Serializable{
     }
 
     public void backwardChain(ArrayList<String> hypothesis){
-	System.out.println("Hypothesis:"+hypothesis);
-	ArrayList<String> orgQueries = (ArrayList)hypothesis.clone();
-	//HashMap<String,String> binding = new HashMap<String,String>();
-	HashMap<String,String> binding = new HashMap<String,String>();
-	targets = new ArrayList<>(hypothesis);
-	targets.remove(0);
-	if(matchingPatterns(hypothesis,binding)){
-	    System.out.println("Yes");
-	    System.out.println(binding);
-	    // 最終的な結果を基のクェリーに代入して表示する
-	    for(int i = 0 ; i < orgQueries.size() ; i++){
-		String aQuery = (String)orgQueries.get(i);
-		System.out.println("binding: "+binding);
-		String anAnswer = instantiate(aQuery,binding);
-		System.out.println("Query: "+aQuery);
-		System.out.println("Answer:"+anAnswer);
-	    }
-	} else {
-	    System.out.println("No");
-	}
+		System.out.println("Hypothesis:"+hypothesis);
+		ArrayList<String> orgQueries = (ArrayList)hypothesis.clone();
+		//HashMap<String,String> binding = new HashMap<String,String>();
+		HashMap<String,String> binding = new HashMap<String,String>();
+		if(matchingPatterns(hypothesis,binding)){
+			System.out.println("qFlag = " + qFlag);
+			if(qFlag == 0) {
+				System.out.println("Yes");
+			}
+			else if(qFlag == 1) {
+			    //System.out.println(binding);
+			    // 最終的な結果を基のクェリーに代入して表示する
+			    for(int i = 0 ; i < orgQueries.size() ; i++){
+					String aQuery = (String)orgQueries.get(i);
+					//System.out.println("binding: "+binding);
+					System.out.println(binding.get("?x"));
+					String anAnswer = instantiate(aQuery,binding);
+					//System.out.println("Query: "+aQuery);
+					//System.out.println("Answer:"+anAnswer);
+					try {
+						FileWriter file = new FileWriter("CarShopWm.data", true);
+						PrintWriter pw = new PrintWriter(new BufferedWriter(file));
+						pw.println(anAnswer);
+						pw.close();
+					} catch(IOException e) {
+						e.printStackTrace();
+					}
+			    }
+		    }
+		} else {
+		    System.out.println("No");
+		}
     }
 
     /**
@@ -285,18 +412,88 @@ class RuleBase implements Serializable{
 	for(int i = 0 ; i < st.countTokens();){
 	    String tmp = st.nextToken();
 	    if(var(tmp)){
-		result = result + " " + (String)theBindings.get(tmp);
-	      System.out.println("tmp: "+tmp+", result: "+result);
+	    	result = result + " " + (String)theBindings.get(tmp);
+	    	//System.out.println("tmp: "+tmp+", result: "+result);
+	    	myName = result.replace(" ", "");
 	    } else {
-		result = result + " " + tmp;
+	    	result = result + " " + tmp;
 	    }
 	}
 	return result.trim();
     }
 
     private boolean var(String str1){
-	// 先頭が ? なら変数
-	return str1.startsWith("?");
+    	// 先頭が ? なら変数
+    	return str1.startsWith("?");
+    }
+
+    public String GetName() {
+    	return myName;
+    }
+
+    public int GetFlag() {
+    	return qFlag;
+	}
+	
+	// データ挿入用メソッド
+    public void insertRule(Rule targetRule) {
+        rules.add(targetRule);
+        try {
+            writeFile();
+        } catch(IOException e) {
+            System.out.println(e.toString());
+        }
+    }
+
+    // データ削除用メソッド
+    public void deleteRule(Rule targetRule) {
+        for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
+            if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
+                rules.remove(ruleNum);
+            }
+        }
+        try {
+            writeFile();
+        } catch(IOException e) {
+            System.out.println(e.toString());
+        }
+    }
+
+    // データ更新用メソッド
+    public void updateRule(Rule targetRule) {
+        for(int ruleNum = 0; ruleNum < rules.size(); ruleNum++) {
+            if(rules.get(ruleNum).getName().equals(targetRule.getName())) {
+                rules.set(ruleNum, targetRule);
+            }
+        }
+        try {
+            writeFile();
+        } catch(IOException e) {
+            System.out.println(e.toString());
+        }
+    }
+
+    // ファイル更新用メソッド
+    private void writeFile() throws IOException {
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, false), "UTF-8"));
+
+        for(Rule rule: rules) {
+            // ルール名の出力
+            writer.println("rule	\"" + rule.getName() + "\"");
+            // 前件の出力
+            List<String> antecedents = rule.getAntecedents();
+            for(int antecedentNum = 0; antecedentNum < antecedents.size(); antecedentNum++) {
+                if(antecedentNum == 0) {
+                    writer.println("if	\"" + antecedents.get(antecedentNum) + "\"");
+                } else {
+                    writer.println("	\"" + antecedents.get(antecedentNum) + "\"");
+                }
+            }
+            // 後件の出力
+			writer.println("then	\"" + rule.getConsequent() + "\"");
+			writer.println();
+        }
+        writer.close();
     }
 
     private void srsAdd(Rule questionField, String question, Rule answerField, String answer) {
@@ -592,9 +789,7 @@ class Unifier {
     StringTokenizer st2;
     String buffer2[];
     HashMap<String,String> vars;
-
-    //String kekka;
-
+  
     Unifier(){
 	//vars = new HashMap();
     }

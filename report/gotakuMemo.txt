@@ -1,0 +1,207 @@
+[BackwordChainにおいて]
+・質問できる内容(バックさせる対象の仮定)は,後件部の内容じゃないと正しく追えない.
+eg) 
+String str = "?x is a Ferrari F50";
+これはルールの後件部の内容なので,RULEの内容からWMへしっかりとバックトラックできる.
+
+String str = "Ito's-Car is a ?x ?y";
+これはルールの後件部の内容ではないので,RULEの内容に入れず,WMのみ参照する.
+Answer:Ito's-Car is a sports car
+
+		↓ので...
+
+バックの質問にできるのは,あくまでルールの後件部の内容(形)じゃないといけない！
+
+
+・前件部の内容はWMの上から見ていくので,もし同じ文構造をもっているものがあったら,
+前者は反応するが,後者は反応しない(1回成功したらそこで終わるから.)
+eg) WMが以下の内容において,
+Ito's-Car is big
+Ito's-Car needs a lot of gas
+Ito's-Car is a sports car
+Ito's-Car is red
+Ito's-Car has a big engine
+
+String str = "Ito's-Car is ?x";と質問すると,
+/*****
+str = Ito's-Car is ?x
+queries = [Ito's-Car is ?x]
+Hypothesis:[Ito's-Car is ?x]
+Success WM
+Ito's-Car is big <=> Ito's-Car is ?x
+Yes
+{?x=big}
+binding: {?x=big}
+tmp: ?x, result:  Ito's-Car is big
+Query: Ito's-Car is ?x
+Answer:Ito's-Car is big
+*****/
+Answer:Ito's-Car is bigのみ！
+「big」のみで,「red」は返ってこない.
+
+		↓でも...
+
+質問内容の具体化
+「Itoの車は大きいです？」→「Yes or No」...疑問詞は使わない　→ 　いける
+「Itoの車は何色ですか？」→「赤色です」....疑問詞は使うね
+「Itoの車は赤色ですか？」→「Yes or No」....疑問詞は使わない  →  いける
+
+
+・Yes/No返事のための肯定文代入時の出力結果
+/*****
+str = Ito's-Car is big
+queries = [Ito's-Car is big]
+Hypothesis:[Ito's-Car is big]
+Success WM
+Ito's-Car is big <=> Ito's-Car is big
+Yes
+{}
+binding: {}
+Query: Ito's-Car is big
+Answer:Ito's-Car is big
+*****/
+なんか行けそうな気がするww
+
+ちなみに...これ,質問を「str = Ito's-Car is red」にしてもいける
+		
+		↓
+
+Yes/No返事は,たとえ構文がダブってても肯定文内容をWMから参照するからいける！
+
+
+	　　　↓↓↓
+
+[妥協案]
+・文の形は違うものにする
+・同じ文構造(文の形)はあってもいいが,変数の具体化ができるものは1つ(最初にもってくること)
+
+
+・2019/11/15(金)
+str.replace()を使えばいいんじゃない？って思うけど...
+→それだと順番に対応できないんっすよね！
+eg)
+「Taro's-Car is big」に対して「Is Taro's-Car big ?」が聞きたいでしょ！
+順番入れ替えるのがいいよね！やっぱり！
+
+
+・2019/11/21(木)
+「my-car has a VTEC engine」
+に対して,
+「What does my car have ?」
+と質問すると,
+「my-car has ?x」
+となるので,
+「?x = a VTEC engine」
+とはならないのである. 1語じゃないとマッチングできないからね！なので,
+「my-car has-a VTEC-engine」
+にするしかないよね！
+
+・2019/11/22(金)
+後ろ向き推論において, 
+「What does his car have ?」は質問の答えが返ってきません.
+なぜなら, 「his-car has ?x」となって...あ、いや、
+ルールを参照する問には答えられなくてもいいけど, WMを参照するやつにはしっかり答えを返さないと...
+
+いや～～,,,なんか操作的に, backWardChainメソッドを使う..から, WMは触らない流れなんだよね～
+だから, 複数候補が必要な{?x = a big engine}みたいなのって,{?x = a-big-engine}なら,,,いや,それなら
+{has-a big-engine}にしないといけないしな～～
+
+
+
+/******** 実行例[前向き推論] **********/
+質問を入力してください
+Is my car inexpensive ?
+質問内容 = Is my car inexpensive ?
+patarn = my-car is inexpensive
+答え = Yes
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+Does my car have a VTEC engine ?
+質問内容 = Does my car have a VTEC engine ?
+secondToken = my-car
+patarn = my-car has a VTEC engine
+答え = Yes
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+What does my car have ?
+質問内容 = What does my car have ?
+patarn = my-car has ?x
+答え = color-models
+答え = seats
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+Is my car an Accord Wagon ?
+質問内容 = Is my car an Accord Wagon ?
+patarn = my-car is an Accord Wagon
+答え = Yes
+
+質問を入力してください
+What is an Accord Wagon ?
+質問内容 = What is an Accord Wagon ?
+patarn = ?x is an Accord Wagon
+もう１回? 1...Yes/ 0...No 		← できてないっすね...
+
+質問を入力してください
+What is my car ?
+質問内容 = What is my car ?
+patarn = ?x is my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+答え = my-car
+もう１回? 1...Yes/ 0...No 		← ばぐってますね...
+
+/******** 実行例[後ろ向き推論] **********/
+質問を入力してください
+Is his car inexpensive ?
+質問内容 = Is his car inexpensive ?
+patarn = his-car is inexpensive
+queries = [his-car is inexpensive]
+Hypothesis:[his-car is inexpensive]
+Success WM
+his-car is inexpensive <=> his-car is inexpensive
+qFlag = 0
+Yes
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+Does his car have several color models ?
+質問内容 = Does his car have several color models ?
+patarn = his-car has several color models
+queries = [his-car has several color models]
+Hypothesis:[his-car has several color models]
+Success WM
+his-car has several color models <=> his-car has several color models
+qFlag = 0
+Yes
+もう１回? 1...Yes/ 0...No 1
+
+質問を入力してください
+What is an Accord Wagon ?
+質問内容 = What is an Accord Wagon ?
+patarn = ?x is an Accord Wagon
+queries = [?x is an Accord Wagon]
+Hypothesis:[?x is an Accord Wagon]
+Success WM
+his-car is an Accord Wagon <=> ?x is an Accord Wagon
+qFlag = 1
+his-car
+もう１回? 1...Yes/ 0...No 
+
+What is a wagon ?
+質問内容 = What is a wagon ?
+patarn = ?x is a wagon
+queries = [?x is a wagon]
+Hypothesis:[?x is a wagon]
+Success WM
+his-car is a wagon <=> ?x is a wagon
+qFlag = 1
+his-car
+もう１回? 1...Yes/ 0...No 

@@ -1,0 +1,5 @@
+rule	"CarRule10"
+if	"?x is a Toyota"
+	"?x has several seats"
+then	"?x is a Prius"
+
