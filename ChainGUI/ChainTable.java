@@ -12,22 +12,18 @@ public abstract class ChainTable extends JPanel {
 
     ChainTable(String fileName) {
         view = new View();
-        pres = new Presenter(view);
-        pres.start(new ArrayList<String>(), "CarShop.data");
 
         SpringLayout layout = new SpringLayout();  // GridBagLayoutの方がいいかも
         setLayout(layout);
     }
 
     ArrayList<Rule> getRules() {
-        // pres.fetchRules();  // 合わせる
-        // return view.showRuleList();
-        return null;
+        return pres.fetchRules();
     }
 
     abstract boolean schStep(ArrayList<String> astList, String schAst);
 
-    abstract void genPnls(ArrayList<StepResult> srlist);  // パネル（解）の描写
+    abstract void paintPnls(ArrayList<StepResult> srlist);  // パネル（解）の描写
 
     boolean addRule(Rule rule) {
         return false;
@@ -47,13 +43,15 @@ class FwdChainTable extends ChainTable {
 
     FwdChainTable(String fileName) {
         super(fileName);
+        pres = new FwdPresenter(view);
+        pres.start(new ArrayList<String>(), fileName);
         stepMap = new HashMap<>();
     }
 
     @Override
     boolean schStep(ArrayList<String> astList, String schAst) {  // schAst: 前向き推論時はnullも許容したい
         ArrayList<StepResult> stepList = pres.restart(astList);
-        genPnls(stepList);
+        paintPnls(stepList);
         
         if(schAst.equals("")) {
             System.out.println("WARNING: 検索文の格納に失敗");  // 後向き推論だったらここで止める
@@ -66,10 +64,13 @@ class FwdChainTable extends ChainTable {
     }
 
     @Override
-    void genPnls(ArrayList<StepResult> srlist) {
+    void paintPnls(ArrayList<StepResult> srlist) {
         stepMap.clear();
         for(StepResult sr : srlist) {
             StepPanel sp = new StepPanel(sr);
+            for(Assertion ast : sr.getAdd()) {
+                // 自分へのedgeを生やす．ここでやるか一通りspを作った後にするか
+            }
             stepMap.put(sr, sp);
 
             // gridbagpaneにして，相対位置はStepPanelのフィールドに保持するか
@@ -81,7 +82,7 @@ class FwdChainTable extends ChainTable {
         }
     }
     
-    void repaintPnls(ArrayList<StepResult> reslist) {  // 前向き推論においては，PaintPnlsと別に描写の更新が先にある
+    void repaintPnls(ArrayList<StepResult> reslist) {  // 前向き推論においては，PaintPnlsと別に描写の更新が後にある
         for (StepResult res : reslist) {
             stepMap.get(res).passing();
             
@@ -93,14 +94,15 @@ class BwdChainTable extends ChainTable {
 
     BwdChainTable(String fileName) {
         super(fileName);
+        pres = new BwdPresenter(view);
+        pres.start(fileName);
     }
     
     @Override
     boolean schStep(ArrayList<String> astList, String schAst) {  // schAst: 後向き推論時nullだとfalse
         if(schAst != null) {
-            // // ArrayList<StepResult> stepList = pres.restart(astList, schAst);
-            // ArrayList<StepResult> stepList = pres.restart(astList);
-            // paintPnls(stepList);
+            ArrayList<StepResult> stepList = pres.stepResults(astList, schAst);
+            paintPnls(stepList);
             return true;
         } else {
             return false;
@@ -108,7 +110,7 @@ class BwdChainTable extends ChainTable {
     }
 
     @Override
-    void genPnls(ArrayList<StepResult> slist) {
+    void paintPnls(ArrayList<StepResult> slist) {
         // for (StepResult s : slist) {
         //     StepPanel sp = new StepPanel(s);
             
