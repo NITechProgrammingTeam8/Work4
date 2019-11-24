@@ -14,36 +14,10 @@ class Presenter {
     	view.showStart();
     }
 
-    // 初期ルールデータの一覧を取得
-    public ArrayList<Rule> fetchFirstRules() {
-        ArrayList<Rule> ruleList = new ArrayList<>();;
-        try {
-        	// ルールの一覧を取得するメソッドの作成ArrayList<Rule>(データがなければnull)
-            ruleList = rulebasesystem.getFirstRules();
-            view.showFirstRuleList(ruleList);
-        } catch (Exception e) {
-        	view.showError(e.toString());
-		}
-        return ruleList;
-    }
-
     // 検索を順に追った結果を返すよう指示する(返却方法検討)
     public ArrayList<StepResult> stepResults(String wmname, String target) {
     	ArrayList<StepResult> stepresults = rulebasesystem.stepResult(wmname, target);
     	view.showStepResult(stepresults);
-    	return stepresults;
-    }
-
-    // 検索を順に追った結果を返すよう指示する【再】(返却方法検討)
-    public ArrayList<StepResult> reStepResults(String wmname, String target) {
-    	ArrayList<Rule> rules = rulebasesystem.getRules();
-    	/*
-    	for (Rule rule : rules) {
-    		System.out.println("●" + rule.getName());
-    	}
-    	*/
-    	ArrayList<StepResult> stepresults = rulebasesystem.reStepResult(rules, wmname, target);
-    	view.showReStepResult(stepresults);
     	return stepresults;
     }
 
@@ -85,7 +59,7 @@ class Presenter {
         ArrayList<Rule> ruleList = new ArrayList<>();;
         try {
         	// ルールの一覧を取得するメソッドの作成ArrayList<Rule>(データがなければnull)
-            ruleList = rulebasesystem.getRules();
+            ruleList = rulebasesystem.fetchRules();
             view.showRuleList(ruleList);
         } catch (Exception e) {
         	view.showError(e.toString());

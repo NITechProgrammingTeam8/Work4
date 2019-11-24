@@ -1,62 +1,70 @@
-class NodePanel extends JPanel {
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.event.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+import java.util.List;
+
+class StepPanel extends JPanel {
     private int id;
     private Rule rule;
     private Assertion ast;
 
-    private ArrayList<Edge> fromEdges; // 自分に入ってくるリンク
-    private boolean focus;
+    // private ArrayList<EdgePanel> fromEdges; // 自分に入ってくるリンク
 
-    NodePanel(Node node) {
-        rule = node.getRule();
-        ast = node.getAssertion();
-        fromEdges = new ArrayList<>();
+    StepPanel(StepResult step) {
+        // rule = step.getRule();
+        // ast = step.getAssertion();
+        // fromEdges = new ArrayList<>();
 
-        focus = false;
+        // setLayout();
+        // setBackground(Color.ORANGE);
+        // setBorder(new BevelBorder(BevelBorder.RAISED));
 
-        setLayout();
-        setBackground(Color.ORANGE);
-        setBorder(new BevelBorder(BevelBorder.RAISED));
+        // JLabel rlabel = new JLabel(rule);
+        // JLabel alabel = new JLabel(assertion);
 
-        JLabel rlabel = new JLabel(rule);
-        JLabel alabel = new JLabel(assertion);
-
-        add(rlabel);
-        add(alabel);
+        // add(rlabel);
+        // add(alabel);
     }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        paintArrow(g);
+        // paintArrow(g);
     }
 
-    void paintArrow(Graphics g) {
-        int fromX = start.x;
-        int fromY = start.y;
-        int toX = end.x;
-        int toY = end.y;
+    // void paintArrow(Graphics g) {
+    //     int fromX = start.x;
+    //     int fromY = start.y;
+    //     int toX = end.x;
+    //     int toY = end.y;
 
-        int constX = getLeft();
-        int constY = getTop();
+    //     int constX = getLeft();
+    //     int constY = getTop();
 
-        g.setColor(Color.BLUE);
-        g.drawLine(fromX - constX, fromY - constY, toX - constX, toY - constY);
-    }
+    //     g.setColor(Color.BLUE);
+    //     g.drawLine(fromX - constX, fromY - constY, toX - constX, toY - constY);
+    // }
 }
 
+
 class EdgePanel extends JPanel {
-    private NodePanel tail;
-    private NodePanel head;
+    private StepPanel tail;
+    private StepPanel head;
     private Point start;
     private Point end;
     private int margin; // パネルの幅の猶予(パネルが端折れないようにするため)
     private JPanel mainPanel;
+    private boolean pass;
 
-    EdgePanel(Link link, NodePanel tail, NodePanel head) { // tail =label=> head
+    EdgePanel(Link link, StepPanel tail, StepPanel head) { // tail =label=> head
         this.link = link;
         this.tail = tail;
         this.head = head;
         margin = 100;
+        pass = false;
 
         // setBackground(Color.BLACK);
         setOpaque(false); // パネルの透過
@@ -192,26 +200,7 @@ class EdgePanel extends JPanel {
         }
     }
 
-    void setSize() {
-        int lpX = getLeft();
-        int lpY = getTop();
-        int lpWidth = getRight() - lpX;
-        int lpHeight = getBtm() - lpY;
-        setBounds(lpX, lpY, lpWidth, lpHeight);
-        // System.out.println(lp);
-        // System.out.println(nodes.get(l.getTail()));
-        // System.out.println(nodes.get(l.getHead()));
-        // System.out.println();
-    }
-
-    void update() {
-        Rectangle source = tail.getBounds();
-        Rectangle distance = head.getBounds();
-        setShortestDistance(source, distance);
-        setSize();
-
-        int fitX = -(mainPanel.getWidth() / 2);
-        int fitY = -(mainPanel.getHeight() / 2);
-        mainPanel.setLocation((getRight() - getLeft()) / 2 + fitX, (getBtm() - getTop()) / 2 + fitY);
+    void passing() {
+        pass = true;
     }
 }

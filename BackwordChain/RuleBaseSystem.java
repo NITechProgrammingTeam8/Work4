@@ -17,6 +17,7 @@ public class RuleBaseSystem {
     static FileManager fm;
     static String fileName = null;
     ArrayList<Rule> firstRule;
+    static boolean fileFlag; // 初期データか否か
 
     public static void main(String args[]){
 	fm = new FileManager();
@@ -54,6 +55,7 @@ public class RuleBaseSystem {
 
     // 初期ルールデータの読み込み
     public void start(String filename) {
+    	fileFlag = true;
     	fm = new FileManager();
     	firstRule = new ArrayList<>();
     	RuleBaseSystem.fileName = filename;
@@ -65,9 +67,29 @@ public class RuleBaseSystem {
     	return firstRule;
     }
 
+    // 更新済みルールの取得
+    public ArrayList<Rule> getRules() {
+    	return rb.getRules();
+    }
+
+    // ルールの取得
+    public ArrayList<Rule> fetchRules() {
+    	if (fileFlag == true) {
+    		return getFirstRules();
+    	} else {
+    		return getRules();
+    	}
+    }
+
     // 更新前ルールでの推論
     public ArrayList<StepResult> stepResult(String wmname, String target) {
-    	ArrayList<Rule> rules = getFirstRules();
+    	ArrayList<Rule> rules = new ArrayList<>();
+    	if (fileFlag == true) {
+    		rules = getFirstRules();
+    		fileFlag = false;
+    	} else {
+    		rules = getRules();
+    	}
     	ArrayList<String> wm = fm.loadWm(wmname);
     	rb = new RuleBase(rules,wm);
     	/*
@@ -83,26 +105,7 @@ public class RuleBaseSystem {
 		ArrayList<StepResult> answer = rb.getStepResults();
 		return answer;
     }
-
-    // 更新後ルールでの推論
-    public ArrayList<StepResult> reStepResult(ArrayList<Rule> rules, String wmname, String target) {
-    	fm = new FileManager();
-    	ArrayList<String> wm = fm.loadWm(wmname);
-    	rb = new RuleBase(rules,wm);
-    	/*
-    	// これは探索の中に入るかもしれない
-    	StringTokenizer st = new StringTokenizer(target,",");
-		ArrayList<String> queries = new ArrayList<String>();
-		for(int i = 0 ; i < st.countTokens();){
-			queries.add(st.nextToken());
-		}
-		*/
-    	ArrayList<String> queries = NaturalLanguage(target);
-		rb.backwardChain(queries);
-		ArrayList<StepResult> answer = rb.getStepResults();
-		return answer;
-    }
-
+	
     // ルールの追加
     public boolean addRule(String newRuleName, ArrayList<String> newRuleAntecedents, String newRuleConsequent) {
     	return rb.insertRule( new Rule(newRuleName, newRuleAntecedents, newRuleConsequent) );
@@ -116,11 +119,6 @@ public class RuleBaseSystem {
     // ルールの更新
     public boolean updateRule(Rule targetRule) {
     	return rb.updateRule(targetRule);
-    }
-
-    // 更新済みルールの取得
-    public ArrayList<Rule> getRules() {
-    	return rb.getRules();
     }
 
     /***
