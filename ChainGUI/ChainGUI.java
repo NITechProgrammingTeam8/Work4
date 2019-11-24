@@ -6,35 +6,28 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
-public class FwdChainGUI extends JFrame {
-    FwdChainTable fct;
+
+public class ChainGUI extends JFrame {
+    ChainTable ctable;
 
     public static void main(String args[]) {
-        FwdChainGUI frame = new FwdChainGUI("前向き推論");
+        // FwdChainGUI frame = new FwdChainGUI("前向き推論", "CarShop.data");
+        FwdChainGUI frame = new BwdChainGUI("後向き推論", "CarShop.data");
         frame.setVisible(true);
     }
 
-    FwdChainGUI(String title) {
-
+    ChainGUI(String title) {
         setTitle(title);
         int appWidth = 1500;
         int appHeight = 700;
         setBounds(100, 100, appWidth, appHeight);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        fct = new FwdChainTable("CarShop.data");
-        JPanel mainPnl = fct;
-        JPanel menuPnl = new MenuPanel();
-
-        Container contentPane = getContentPane();
-        contentPane.add(mainPnl, BorderLayout.CENTER);
-        contentPane.add(menuPnl, BorderLayout.WEST);
     }
 
     class MenuPanel extends JPanel implements ActionListener {
         JTextArea wmTexts;
         JTextField schText;
-        List<Rule> ruleList;
+        ArrayList<Rule> ruleList;
         DefaultListModel ruleMod;
         JList rulePnl;
         JLabel status;
@@ -42,10 +35,10 @@ public class FwdChainGUI extends JFrame {
         MenuPanel() {
             addWindowListener(new WindowAdapter() {
                 public void windowOpened(WindowEvent e) {
-                    // ruleList = fct.getRules();
-                    // for (Rule r : ruleList) {
-                    //     ruleMod.addElement(r);
-                    // }
+                    ruleList = ctable.getRules();
+                    for (Rule r : ruleList) {
+                        ruleMod.addElement(r);
+                    }
                 }
             });
             JPanel schPnl = new JPanel();
@@ -99,12 +92,12 @@ public class FwdChainGUI extends JFrame {
 
                 String schAst = schText.getText();
 
-                fct.schStep(astList, schAst);
+                ctable.schStep(astList, schAst);
                 param = "実行";
             } else {
                 // if (cmd.equals("追加")) {
                 //     Rule r = new Rule(   );
-                //     if (fct.addRule(val)) {
+                //     if (ctable.addRule(val)) {
                 //         ruleMod.addElement(r);
                 //         param = "成功";
                 //     }
@@ -115,7 +108,7 @@ public class FwdChainGUI extends JFrame {
 
                 //         // 更新処理
 
-                //         if (fct.udRule(val, , , )) {
+                //         if (ctable.udRule(val, , , )) {
                 //             model.set(index, r);  // Ruleインスタンス自体が書き換わっているが，これは必要？
                 //             param = "成功";
                 //         }
@@ -126,7 +119,7 @@ public class FwdChainGUI extends JFrame {
                 //     if (!listPanel.isSelectionEmpty()) {
                 //         int index = listPnl.getSelectedIndex();
                 //         Rule val = (Rule) listPnl.getSelectedValue();
-                //         if (fct.rmRule(val)) {
+                //         if (ctable.rmRule(val)) {
                 //             ruleMod.remove(index);
                 //             param = "成功";
                 //         }
@@ -137,5 +130,31 @@ public class FwdChainGUI extends JFrame {
             }
             status.setText(cmd + "の" + param);
         }
+    }
+}
+
+public class FwdChainGUI extends ChainGUI {
+    FwdChainGUI(String title, String ruleFileName) {
+        super(title);
+        ctable = new FwdChainTable(ruleFileName);
+        JPanel mainPnl = ctable;
+        JPanel menuPnl = new MenuPanel();
+
+        Container contentPane = getContentPane();
+        contentPane.add(mainPnl, BorderLayout.CENTER);
+        contentPane.add(menuPnl, BorderLayout.WEST);
+    }
+}
+
+public class BwdChainGUI extends ChainGUI {
+    BwdChainGUI(String title, String ruleFileName) {
+        super(title);
+        ctable = new BwdChainTable(ruleFileName);
+        JPanel mainPnl = ctable;
+        JPanel menuPnl = new MenuPanel();
+
+        Container contentPane = getContentPane();
+        contentPane.add(mainPnl, BorderLayout.CENTER);
+        contentPane.add(menuPnl, BorderLayout.WEST);
     }
 }

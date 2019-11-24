@@ -7,49 +7,69 @@ import java.util.*;
 import java.util.List;
 
 class StepPanel extends JPanel {
-    private int id;
-    private Rule rule;
-    private Assertion ast;
-
+    private StepResult step;
     // private ArrayList<EdgePanel> fromEdges; // 自分に入ってくるリンク
+    JPanel rpanel;
+    JLabel alabel;
 
-    StepPanel(StepResult step) {
-        // rule = step.getRule();
-        // ast = step.getAssertion();
+    StepPanel(Assertion ast) {
         // fromEdges = new ArrayList<>();
 
         // setLayout();
         // setBackground(Color.ORANGE);
         // setBorder(new BevelBorder(BevelBorder.RAISED));
 
-        // JLabel rlabel = new JLabel(rule);
-        // JLabel alabel = new JLabel(assertion);
+        rpanel = new JPanel();
+        alabel = new JLabel(ast.getName());
+        add(alabel);
+    }
 
-        // add(rlabel);
-        // add(alabel);
+    StepPanel(StepResult step) {
+        this.step = step;
+        // fromEdges = new ArrayList<>();
+
+        setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+        setBackground(Color.ORANGE);
+        setBorder(new BevelBorder(BevelBorder.RAISED));
+
+        JPanel rpanel = new RulePanel(step.getApply());
+        JLabel alabel = new JLabel(step.getSuccess().getName());
+
+        add(rpanel);
+        add(Box.createGlue());  // 隙間
+        add(alabel);
     }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // paintArrow(g);
+        paintArrow(g);
     }
 
-    // void paintArrow(Graphics g) {
-    //     int fromX = start.x;
-    //     int fromY = start.y;
-    //     int toX = end.x;
-    //     int toY = end.y;
+    void paintArrow(Graphics g) {
+        int fromX = rpanel.getX() + (rpanel.getWidth() / 2);
+        int fromY = rpanel.getY() + (rpanel.getHeight() / 2);
+        int toX = alabel.getX() + (alabel.getWidth() / 2);
+        int toY = alabel.getY();
 
-    //     int constX = getLeft();
-    //     int constY = getTop();
+        g.setColor(Color.BLUE);
+        g.drawLine(fromX, fromY, toX, toY);
+    }
 
-    //     g.setColor(Color.BLUE);
-    //     g.drawLine(fromX - constX, fromY - constY, toX - constX, toY - constY);
-    // }
+    class RulePanel extends JPanel {
+        RulePanel(Rule rule) {
+            setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+
+            add(new JLabel("rule  " + rule.getName()));
+            for(String s : rule.getAntecedents()) {
+                add(new JLabel("if    " + s));
+            }
+            add(new JLabel("then  " + rule.getConsequent()));
+        }
+    }
 }
 
-
+/*
 class EdgePanel extends JPanel {
     private StepPanel tail;
     private StepPanel head;
@@ -204,3 +224,4 @@ class EdgePanel extends JPanel {
         pass = true;
     }
 }
+*/
