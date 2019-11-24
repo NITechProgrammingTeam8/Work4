@@ -21,7 +21,7 @@ class Test {
 
 		presenter.start(filename);
 		// 初期ルールの一覧を取得
-		ArrayList<Rule> ruleLists = presenter.fetchFirstRules();
+		ArrayList<Rule> ruleLists = presenter.fetchRules();
 		for (Rule ruleList : ruleLists) {
 			System.out.println("ruleName:" + ruleList.getName());
 			for (String antecedent : ruleList.getAntecedents()) {
@@ -120,7 +120,7 @@ class Test {
 
 		target = "What is an Accord Wagon ?";
 		stepresults = new ArrayList<>();
-		stepresults = presenter.reStepResults(wmname, target);
+		stepresults = presenter.stepResults(wmname, target);
 		System.out.println("【出力結果】");
 		for (StepResult stepresult : stepresults) {
 			Rule QF = stepresult.getQF();
@@ -141,5 +141,6 @@ class Test {
 			System.out.println("◆Answer: " + A);
 			System.out.println();
 		}
+
 	}
 }

@@ -17,14 +17,21 @@ public class RuleBaseSystem {
     static FileManager fm;
     static String fileName = null;
     ArrayList<Rule> firstRule;
+    static boolean fileFlag; // 初期データか否か
 
     public static void main(String args[]){
 	fm = new FileManager();
-    ArrayList<Rule> rules = fm.loadRules("CarShop.data");	//ファイルからルールの読み取り
-    //ArrayList rules = fm.loadRules("AnimalWorld.data");
-    ArrayList<String> wm    = fm.loadWm("CarShopWm.data");	//ファイルからワーキングメモリの読み取り
-    //ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
-    rb = new RuleBase(rules,wm);		//ルールベースの構築
+	//ファイルからルールの読み取り
+	//ArrayList<Rule> rules = fm.loadRules("CarShop.data");
+	ArrayList<Rule> rules = fm.loadRules("InstantNoodle.data");
+	//ArrayList rules = fm.loadRules("AnimalWorld.data");
+
+	//ファイルからワーキングメモリの読み取り
+	//ArrayList<String> wm    = fm.loadWm("CarShopWm.data");
+	ArrayList<String> wm    = fm.loadWm("InstantNoodleWm.data");
+	//ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
+
+	rb = new RuleBase(rules,wm);		//ルールベースの構築
 
 	Scanner stdIn1 = new Scanner(System.in);	//文字列読み込み
 	Scanner stdIn2 = new Scanner(System.in);	//数値読み込み
@@ -48,6 +55,7 @@ public class RuleBaseSystem {
 
     // 初期ルールデータの読み込み
     public void start(String filename) {
+    	fileFlag = true;
     	fm = new FileManager();
     	firstRule = new ArrayList<>();
     	RuleBaseSystem.fileName = filename;
@@ -59,9 +67,29 @@ public class RuleBaseSystem {
     	return firstRule;
     }
 
+    // 更新済みルールの取得
+    public ArrayList<Rule> getRules() {
+    	return rb.getRules();
+    }
+
+    // ルールの取得
+    public ArrayList<Rule> fetchRules() {
+    	if (fileFlag == true) {
+    		return getFirstRules();
+    	} else {
+    		return getRules();
+    	}
+    }
+
     // 更新前ルールでの推論
     public ArrayList<StepResult> stepResult(String wmname, String target) {
-    	ArrayList<Rule> rules = getFirstRules();
+    	ArrayList<Rule> rules = new ArrayList<>();
+    	if (fileFlag == true) {
+    		rules = getFirstRules();
+    		fileFlag = false;
+    	} else {
+    		rules = getRules();
+    	}
     	ArrayList<String> wm = fm.loadWm(wmname);
     	rb = new RuleBase(rules,wm);
     	/*
@@ -77,26 +105,7 @@ public class RuleBaseSystem {
 		ArrayList<StepResult> answer = rb.getStepResults();
 		return answer;
     }
-
-    // 更新後ルールでの推論
-    public ArrayList<StepResult> reStepResult(ArrayList<Rule> rules, String wmname, String target) {
-    	fm = new FileManager();
-    	ArrayList<String> wm = fm.loadWm(wmname);
-    	rb = new RuleBase(rules,wm);
-    	/*
-    	// これは探索の中に入るかもしれない
-    	StringTokenizer st = new StringTokenizer(target,",");
-		ArrayList<String> queries = new ArrayList<String>();
-		for(int i = 0 ; i < st.countTokens();){
-			queries.add(st.nextToken());
-		}
-		*/
-    	ArrayList<String> queries = NaturalLanguage(target);
-		rb.backwardChain(queries);
-		ArrayList<StepResult> answer = rb.getStepResults();
-		return answer;
-    }
-
+	
     // ルールの追加
     public boolean addRule(String newRuleName, ArrayList<String> newRuleAntecedents, String newRuleConsequent) {
     	return rb.insertRule( new Rule(newRuleName, newRuleAntecedents, newRuleConsequent) );
@@ -110,11 +119,6 @@ public class RuleBaseSystem {
     // ルールの更新
     public boolean updateRule(Rule targetRule) {
     	return rb.updateRule(targetRule);
-    }
-
-    // 更新済みルールの取得
-    public ArrayList<Rule> getRules() {
-    	return rb.getRules();
     }
 
     /***
@@ -160,6 +164,9 @@ public class RuleBaseSystem {
     	String secondToken = stoken.nextToken();
     	tokenPoint ++;
     	if(firstToken.equals("Is")) {
+			if(secondToken.equals("it")) {
+				secondToken = "It";
+			}
     		tokenList.add(secondToken);
     		tokenList.add("is");
     	}
@@ -174,11 +181,15 @@ public class RuleBaseSystem {
     			tokenList.add(" ?x");
     		}
     		else if(secondToken.equals("does")) {
-    			tokenList.add(stoken.nextToken());
-    			tokenPoint ++;
     			String thirdToken = stoken.nextToken();
+    			if(thirdToken.equals("it")) {
+					thirdToken = "It";
+				}
+    			tokenList.add(thirdToken);
     			tokenPoint ++;
-    			if(thirdToken.equals("have")) {
+    			String fourthToken = stoken.nextToken();
+    			tokenPoint ++;
+    			if(fourthToken.equals("have")) {
     				tokenList.add("has");
     			}
     			tokenList.add("?x");
@@ -189,11 +200,16 @@ public class RuleBaseSystem {
     		}
     	}
     	else if(firstToken.equals("Does")) {
+   		if(secondToken.equals("it")) {
+				secondToken = "It";
+			}
     		String thirdToken = stoken.nextToken();
     		tokenPoint ++;
-    		//三単現のs
-    		if(thirdToken.equals("have")) {
-    			thirdToken = "has";
+
+    		//三人称単数のsの処理
+			String s = secondToken.substring(secondToken.length()-1);
+			if(thirdToken.equals("have") & !s.equals("s")) {
+				thirdToken = "has";
     		}
     		else {
     			thirdToken = thirdToken.replace(thirdToken, thirdToken+"s");
