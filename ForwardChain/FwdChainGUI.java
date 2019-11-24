@@ -1,7 +1,6 @@
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -23,7 +22,7 @@ public class FwdChainGUI extends JFrame {
         setBounds(100, 100, appWidth, appHeight);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        fct = new FwdChainTable();
+        fct = new FwdChainTable("CarShop.data");
         JPanel mainPnl = fct;
         JPanel menuPnl = new MenuPanel();
 
@@ -33,7 +32,7 @@ public class FwdChainGUI extends JFrame {
     }
 
     class MenuPanel extends JPanel implements ActionListener {
-        JTextArea initTexts;
+        JTextArea wmTexts;
         JTextField schText;
         List<Rule> ruleList;
         DefaultListModel ruleMod;
@@ -43,30 +42,30 @@ public class FwdChainGUI extends JFrame {
         MenuPanel() {
             addWindowListener(new WindowAdapter() {
                 public void windowOpened(WindowEvent e) {
-                    ruleList = fct.getRules();
-                    for (Rule r : ruleList) {
-                        ruleMod.addElement(r);
-                    }
+                    // ruleList = fct.getRules();
+                    // for (Rule r : ruleList) {
+                    //     ruleMod.addElement(r);
+                    // }
                 }
             });
             JPanel schPnl = new JPanel();
 
-            initTexts = new JTextArea( , );
-            schText = new JTextArea(30);
+            wmTexts = new JTextArea(10, 35);
+            schText = new JTextField(20);
 
             JButton schBtn = new JButton("検索");
             schBtn.addActionListener(this);
 
-            schPnl.add(initTexts);
+            schPnl.add(wmTexts);
             schPnl.add(schText);
             schPnl.add(schBtn);
 
             JPanel editPnl = new JPanel();
-
+            
             ruleMod = new DefaultListModel();
             rulePnl = new JList(ruleMod);
-            JScrollPane ruleList = new JScrollPane();
-            ruleSp.getViewport().setView(rulPnl);
+            JScrollPane ruleSp = new JScrollPane();
+            ruleSp.getViewport().setView(rulePnl);
             ruleSp.setPreferredSize(new Dimension(200, 300));
 
             JPanel btnPnl = new JPanel();
@@ -95,49 +94,46 @@ public class FwdChainGUI extends JFrame {
 
             String param = "失敗";
             if (cmd.equals("検索")) {
-                String[] arg = initTexts.getText().split("¥n");
-                ArrayList<Assertion> astList = new ArrayList<>();
+                String[] arg = wmTexts.getText().split("¥n");
+                ArrayList<String> astList = new ArrayList<>(Arrays.asList(arg));
 
-                for (String s : arg) {
-                    astList.add(new Assertion(s));
-                }
+                String schAst = schText.getText();
 
-                Assertion schAst = new Assertion(schText.getText());  // schTextが空だったら？
-                fct.schNode(astList, schAst);
+                fct.schStep(astList, schAst);
                 param = "実行";
             } else {
-                if (cmd.equals("追加")) {
-                    Rule r = new Rule(   );
-                    if (fct.addRule(val)) {
-                        ruleMod.addElement(r);
-                        param = "成功";
-                    }
-                }else if (cmd.equals("更新")) {
-                    if (!listPanel.isSelectionEmpty()) {
-                        int index = listPnl.getSelectedIndex();
-                        Rule val = (Rule) listPnl.getSelectedValue();
+                // if (cmd.equals("追加")) {
+                //     Rule r = new Rule(   );
+                //     if (fct.addRule(val)) {
+                //         ruleMod.addElement(r);
+                //         param = "成功";
+                //     }
+                // }else if (cmd.equals("更新")) {
+                //     if (!listPanel.isSelectionEmpty()) {
+                //         int index = listPnl.getSelectedIndex();
+                //         Rule val = (Rule) listPnl.getSelectedValue();
 
-                        // 更新処理
+                //         // 更新処理
 
-                        if (fct.udRule(val, , , )) {
-                            model.set(index, r);  // Ruleインスタンス自体が書き換わっているが，これは必要？
-                            param = "成功";
-                        }
-                    } else {
-                        System.out.println("更新失敗（未選択のため）");
-                    }
-                } else if (cmd.equals("削除")) {
-                    if (!listPanel.isSelectionEmpty()) {
-                        int index = listPnl.getSelectedIndex();
-                        Rule val = (Rule) listPnl.getSelectedValue();
-                        if (fct.rmRule(val)) {
-                            ruleMod.remove(index);
-                            param = "成功";
-                        }
-                    } else {
-                        System.out.println("削除失敗（未選択のため）");
-                    }
-                } 
+                //         if (fct.udRule(val, , , )) {
+                //             model.set(index, r);  // Ruleインスタンス自体が書き換わっているが，これは必要？
+                //             param = "成功";
+                //         }
+                //     } else {
+                //         System.out.println("更新失敗（未選択のため）");
+                //     }
+                // } else if (cmd.equals("削除")) {
+                //     if (!listPanel.isSelectionEmpty()) {
+                //         int index = listPnl.getSelectedIndex();
+                //         Rule val = (Rule) listPnl.getSelectedValue();
+                //         if (fct.rmRule(val)) {
+                //             ruleMod.remove(index);
+                //             param = "成功";
+                //         }
+                //     } else {
+                //         System.out.println("削除失敗（未選択のため）");
+                //     }
+                // } 
             }
             status.setText(cmd + "の" + param);
         }
