@@ -208,7 +208,7 @@ public class RuleBaseSystem {
 
     		//三人称単数のsの処理
 			String s = secondToken.substring(secondToken.length()-1);
-			if(thirdToken.equals("have") & !s.equals("s")) {
+			if(thirdToken.equals("have") & !s.equals("s")) {		
 				thirdToken = "has";
     		}
     		else {
