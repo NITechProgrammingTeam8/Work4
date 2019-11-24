@@ -1,32 +1,39 @@
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.event.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+import java.util.List;
+
 public abstract class ChainTable extends JPanel {
     View view;
     Presenter pres;
-    ArrayList<Assertion> astList;
-    Assertion schAst;  // astListの中に入れていい？
 
     ChainTable(String fileName) {
         view = new View();
         pres = new Presenter(view);
-        pres.start("CarShop.data");
+        pres.start(new ArrayList<String>(), "CarShop.data");
 
         SpringLayout layout = new SpringLayout();  // GridBagLayoutの方がいいかも
         setLayout(layout);
     }
 
     ArrayList<Rule> getRules() {
-        pres.getRules();  // 合わせる
-        return view.showRuleList();
+        // pres.fetchRules();  // 合わせる
+        // return view.showRuleList();
+        return null;
     }
 
-    abstract boolean schNode(ArrayList<Assertion> astList, Assertion schAst);
+    abstract boolean schStep(ArrayList<String> astList, String schAst);
 
-    abstract void paintPnls(ArrayList<Node> nlist);  // パネル（解）の描写
+    abstract void genPnls(ArrayList<StepResult> srlist);  // パネル（解）の描写
 
     boolean addRule(Rule rule) {
         return false;
     }
 
-    boolean udRule(Rule rule, String , ArrayList<String> , String ) {
+    boolean udRule(Rule rule, String name, ArrayList<String> antecedents, String consequent) {
         return false;
     }
 
@@ -36,40 +43,48 @@ public abstract class ChainTable extends JPanel {
 }
 
 class FwdChainTable extends ChainTable {
+    HashMap<StepResult, StepPanel> stepMap;
 
     FwdChainTable(String fileName) {
         super(fileName);
+        stepMap = new HashMap<>();
     }
 
     @Override
-    boolean schNode(ArrayList<Assertion> astList, Assertion schAst) {
-        this.astList = astList;
-        this.schAst = schAst;  // 前向き推論時はnullも許容したい
-        ArrayList<Node> nodeList = pres.restart(astList);
-        genPnls(nodeList);
-
-        if(schAst != null) {
-            ArrayList<Node> resList = pres.getResults(schAst);
+    boolean schStep(ArrayList<String> astList, String schAst) {  // schAst: 前向き推論時はnullも許容したい
+        ArrayList<StepResult> stepList = pres.restart(astList);
+        genPnls(stepList);
+        
+        if(schAst.equals("")) {
+            System.out.println("WARNING: 検索文の格納に失敗");  // 後向き推論だったらここで止める
+        } else {
+            pres.searchAssertion(schAst);
+            ArrayList<StepResult> resList = view.showSearchAssertion();
             paintPnls(resList);
         }
         return true;
     }
 
-    void genPnls(ArrayList<Node> nlist) {  // 前向き推論においては，PaintPnlsと別に全体の描写が先にある
-        
+    @Override
+    void genPnls(ArrayList<StepResult> srlist) {
+        stepMap.clear();
+        for(StepResult sr : srlist) {
+            StepPanel sp = new StepPanel(sr);
+            stepMap.put(sr, sp);
+
+            // gridbagpaneにして，相対位置はStepPanelのフィールドに保持するか
+            add(sp);
+
+            // EdgePanel ep = n.getEdges();  // 各ノードは，リンクをどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
+            // // layout.putConstraint(, ep, , , , );  // SpringLayoutだとこれの定義に条件分岐が必要そう
+            // add(ep);
+        }
     }
     
-    @Override
-    void paintPnls(ArrayList<Node> nlist) {
-        for (Node n : nlist) {
-            NodePanel np = new NodePanel(n);
+    void repaintPnls(ArrayList<StepResult> reslist) {  // 前向き推論においては，PaintPnlsと別に描写の更新が先にある
+        for (StepResult res : reslist) {
+            stepMap.get(res).passing();
             
-            // layout.putConstraint(, , , , );
-            add(np);
-
-            EdgePanel ep = n.getEdges();  // 各ノードは，リンクをどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
-            // layout.putConstraint(, ep, , , , );  // SpringLayoutだとこれの定義に条件分岐が必要そう
-            add(ep);
         }
     }
 }
@@ -81,12 +96,11 @@ class BwdChainTable extends ChainTable {
     }
     
     @Override
-    boolean schNode(ArrayList<Assertion> astList, Assertion schAst) {
-        this.astList = astList;
-        this.schAst = schAst;  // 後向き推論時nullだとfalse
+    boolean schStep(ArrayList<String> astList, String schAst) {  // schAst: 後向き推論時nullだとfalse
         if(schAst != null) {
-            ArrayList<Node> nodeList = pres.restart(astList, schAst);
-            paintPnls(nodeList);
+            // // ArrayList<StepResult> stepList = pres.restart(astList, schAst);
+            // ArrayList<StepResult> stepList = pres.restart(astList);
+            // paintPnls(stepList);
             return true;
         } else {
             return false;
@@ -94,16 +108,16 @@ class BwdChainTable extends ChainTable {
     }
 
     @Override
-    void paintPnls(ArrayList<Node> nlist) {
-        for (Node n : nlist) {
-            NodePanel np = new NodePanel(n);
+    void genPnls(ArrayList<StepResult> slist) {
+        // for (StepResult s : slist) {
+        //     StepPanel sp = new StepPanel(s);
             
-            // layout.putConstraint(, , , , );
-            add(np);
+        //     layout.putConstraint(, , , , );
+        //     add(sp);
 
-            EdgePanel ep = n.getEdges();  // 各ノードは，リンクをどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
-            // layout.putConstraint(, ep, , , , );  // SpringLayoutだとこれの定義に条件分岐が必要そう
-            add(ep);
-        }
+        //     EdgePanel ep = s.getEdges();  // 各ノードは，リンクをどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
+        //     // layout.putConstraint(, ep, , , , );  // SpringLayoutだとこれの定義に条件分岐が必要そう
+        //     add(ep);
+        // }
     }
 }
