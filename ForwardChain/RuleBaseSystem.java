@@ -188,6 +188,9 @@ public class RuleBaseSystem {
 		String secondToken = stoken.nextToken();
 		tokenPoint ++;
 		if(firstToken.equals("Is")) {
+			if(secondToken.equals("it")) {
+				secondToken = "It";
+			}
 			tokenList.add(secondToken);
 			tokenList.add("is");
 		}
@@ -202,9 +205,13 @@ public class RuleBaseSystem {
 				tokenList.add(" ?x");
 			}
 			else if(secondToken.equals("does")) {
-				tokenList.add(stoken.nextToken());
-				tokenPoint ++;
 				String thirdToken = stoken.nextToken();
+				if(thirdToken.equals("it")) {
+					thirdToken = "It";
+				}
+				tokenList.add(thirdToken);
+				tokenPoint ++;
+				String fourthToken = stoken.nextToken();
 				tokenPoint ++;
 
 				//三単現のsの処理
@@ -212,8 +219,8 @@ public class RuleBaseSystem {
 				//String thirdToken3s = thirdToken.substring(thirdToken.length()-1);
 				//System.out.println("thirdToken3s = " + thirdToken3s);
 
-				if(thirdToken.equals("have")) {
-					tokenList.add("has");
+				if(fourthToken.equals("have")) {
+					tokenList.add("has-a");
 				}
 				tokenList.add("?x");
 			}
@@ -223,6 +230,9 @@ public class RuleBaseSystem {
 			}
 		}
 		else if(firstToken.equals("Does")) {
+			if(secondToken.equals("it")) {
+				secondToken = "It";
+			}
 			String thirdToken = stoken.nextToken();
 			tokenPoint ++;
 
@@ -260,8 +270,7 @@ public class RuleBaseSystem {
 		patarn = patarn.replace(",", "");
 		//str = str.replace(" ?", "");	//ここで処理すると変数「?x」の?も消えちゃう
 
-		//System.out.println("patarn = " + patarn);
-
+		System.out.println("patarn = " + patarn);
 
 		//String patarn = "Ito's-Car is ?x";	//前件文の内容「RULEの後件部にないから,WMから見る」
 		//String patarn = "?x is a Ferrari F50";		//後件文の内容「RULEを見て,WMを見る」
@@ -300,7 +309,7 @@ public class RuleBaseSystem {
 					newAssertion.add("has-an");
 				}
 				else if(wmthirdToken.equals("several")) {
-					newAssertion.add(wmsecondToken);
+					newAssertion.add(wmsecondToken+"-a");
 				}
 				else {
 					newAssertion.add(wmsecondToken);
@@ -326,7 +335,9 @@ public class RuleBaseSystem {
 				//System.out.println("stringAssertion = " + stringAssertion);
 				newWorkingMemory.add(stringAssertion);
 			}
+
 			//System.out.println("newWorkingMemory = " + newWorkingMemory);
+			//System.out.println("newWorkingMemorySize = " + newWorkingMemory.size());
 
 			//解析
 			for(int i = 0; i < newWorkingMemory.size(); i++) {
@@ -353,6 +364,7 @@ public class RuleBaseSystem {
 			}
 		}
 	}
+
 }
 
 /**
@@ -518,14 +530,24 @@ class RuleBase {
     Rule applyUnit;
 
   RuleBase(){
-        fileName = "CarShop.data";
+        //fileName = "CarShop.data";
+	fileName = "InstantNoodle.data";
         wm = new WorkingMemory();
+        //CarShopWm.data
+        /*
         wm.addAssertion("my-car is inexpensive");
         wm.addAssertion("my-car has a VTEC engine");
         wm.addAssertion("my-car is stylish");
         wm.addAssertion("my-car has several color models");
         wm.addAssertion("my-car has several seats");
         wm.addAssertion("my-car is a wagon");
+        */
+        //InstantNoodle.data
+        wm.addAssertion("It is expensive");
+        wm.addAssertion("It is a popular noodle");
+        wm.addAssertion("It has a kitsune");
+        wm.addAssertion("It has a green package");
+        wm.addAssertion("It has several udon noodles");
         rules = new ArrayList<Rule>();
         loadRules(fileName);
         srs = new ArrayList<StepResult>();

@@ -20,11 +20,17 @@ public class RuleBaseSystem {
 
     public static void main(String args[]){
 	fm = new FileManager();
-    ArrayList<Rule> rules = fm.loadRules("CarShop.data");	//ファイルからルールの読み取り
-    //ArrayList rules = fm.loadRules("AnimalWorld.data");
-    ArrayList<String> wm    = fm.loadWm("CarShopWm.data");	//ファイルからワーキングメモリの読み取り
-    //ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
-    rb = new RuleBase(rules,wm);		//ルールベースの構築
+	//ファイルからルールの読み取り
+	//ArrayList<Rule> rules = fm.loadRules("CarShop.data");
+	ArrayList<Rule> rules = fm.loadRules("InstantNoodle.data");
+	//ArrayList rules = fm.loadRules("AnimalWorld.data");
+
+	//ファイルからワーキングメモリの読み取り
+	//ArrayList<String> wm    = fm.loadWm("CarShopWm.data");
+	ArrayList<String> wm    = fm.loadWm("InstantNoodleWm.data");
+	//ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
+
+	rb = new RuleBase(rules,wm);		//ルールベースの構築
 
 	Scanner stdIn1 = new Scanner(System.in);	//文字列読み込み
 	Scanner stdIn2 = new Scanner(System.in);	//数値読み込み
@@ -160,6 +166,9 @@ public class RuleBaseSystem {
     	String secondToken = stoken.nextToken();
     	tokenPoint ++;
     	if(firstToken.equals("Is")) {
+			if(secondToken.equals("it")) {
+				secondToken = "It";
+			}
     		tokenList.add(secondToken);
     		tokenList.add("is");
     	}
@@ -174,11 +183,15 @@ public class RuleBaseSystem {
     			tokenList.add(" ?x");
     		}
     		else if(secondToken.equals("does")) {
-    			tokenList.add(stoken.nextToken());
-    			tokenPoint ++;
     			String thirdToken = stoken.nextToken();
+    			if(thirdToken.equals("it")) {
+					thirdToken = "It";
+				}
+    			tokenList.add(thirdToken);
     			tokenPoint ++;
-    			if(thirdToken.equals("have")) {
+    			String fourthToken = stoken.nextToken();
+    			tokenPoint ++;
+    			if(fourthToken.equals("have")) {
     				tokenList.add("has");
     			}
     			tokenList.add("?x");
@@ -189,11 +202,16 @@ public class RuleBaseSystem {
     		}
     	}
     	else if(firstToken.equals("Does")) {
+   		if(secondToken.equals("it")) {
+				secondToken = "It";
+			}
     		String thirdToken = stoken.nextToken();
     		tokenPoint ++;
-    		//三単現のs
-    		if(thirdToken.equals("have")) {
-    			thirdToken = "has";
+
+    		//三人称単数のsの処理
+			String s = secondToken.substring(secondToken.length()-1);
+			if(thirdToken.equals("have") & !s.equals("s")) {		
+				thirdToken = "has";
     		}
     		else {
     			thirdToken = thirdToken.replace(thirdToken, thirdToken+"s");
