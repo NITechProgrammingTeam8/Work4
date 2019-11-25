@@ -676,12 +676,11 @@ class RuleBase {
     	ArrayList<Assertion> wmA = wm.getAssertions();
     	StringBuffer buf = new StringBuffer();
     	buf.append("[");
-    	for (int i = 0; i < wmA.size()-1; i++) {
+    	for (int i = 0; i < wmA.size(); i++) {
     		buf.append(wmA.get(i).getName());
     		buf.append(", ");
     	}
-    	buf.append(wmA.get(wmA.size()-1).getName());
-    	buf.append("]");
+    	buf.replace(buf.length()-1, buf.length(), "]");
     	return buf.toString();
     }
 

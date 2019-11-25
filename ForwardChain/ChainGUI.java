@@ -6,50 +6,60 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
-
 public class ChainGUI extends JFrame {
     ChainTable ctable;
 
     ChainGUI(String title) {
         setTitle(title);
         int appWidth = 1500;
-        int appHeight = 700;
+        int appHeight = 800;
         setBounds(100, 100, appWidth, appHeight);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     class MenuPanel extends JPanel implements ActionListener {
         JTextArea wmTA;
-        JTextArea schTA;
+        JTextField schTF;
+        JPanel editPnl;
         ArrayList<Rule> ruleList;
         DefaultListModel ruleMod;
         JList rulePnl;
+        RuleEditor re;
         JLabel status;
 
         MenuPanel() {
+            setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+
             addWindowListener(new WindowAdapter() {
                 public void windowOpened(WindowEvent e) {
                     udRuleMod();
                 }
             });
-            JPanel schPnl = new JPanel();
 
-            wmTA = new JTextArea(10, 35);
-            schTA = new JTextArea(3, 30);
+            JPanel schPnl = new JPanel();
+            // GridLayout gl = new GridLayout();
+            // gl.setRows(1);
+            // schPnl.setLayout(gl);
+
+            wmTA = new JTextArea(10, 25);
+            schTF = new JTextField(20);
 
             JButton schBtn = new JButton("検索");
             schBtn.addActionListener(this);
 
-            schPnl.add(schTA);
+            schPnl.add(wmTA);
+            schPnl.add(schTF);
             schPnl.add(schBtn);
 
-            JPanel editPnl = new JPanel();
-            
+            editPnl = new JPanel();
+            // editPnl.setLayout(gl);
+            // gl.setRows(1);
+
             ruleMod = new DefaultListModel();
             rulePnl = new JList(ruleMod);
             JScrollPane ruleSp = new JScrollPane();
             ruleSp.getViewport().setView(rulePnl);
-            ruleSp.setPreferredSize(new Dimension(200, 300));
+            ruleSp.setPreferredSize(new Dimension(500, 300));
 
             JPanel btnPnl = new JPanel();
             JButton addBtn = new JButton("追加");
@@ -62,16 +72,16 @@ public class ChainGUI extends JFrame {
             rmBtn.addActionListener(this);
             btnPnl.add(rmBtn);
 
-            RuleEditor rp = new RuleEditor();
+            re = new RuleEditor();
 
+            editPnl.add(ruleSp);
             editPnl.add(btnPnl);
             editPnl.add(re);
 
             status = new JLabel();
-            Container contentPane = getContentPane();
-            contentPane.add(schPnl, BorderLayout.NORTH);
-            contentPane.add(editPnl, BorderLayout.CENTER);
-            contentPane.add(status, BorderLayout.SOUTH);
+            add(schPnl);
+            add(editPnl);
+            add(status);
         }
 
         void udRuleMod() {
@@ -87,34 +97,33 @@ public class ChainGUI extends JFrame {
             String cmd = e.getActionCommand();
 
             if (cmd.equals("検索")) {
-                ArrayList<String> astList = new ArrayList<>(Arrays.asList(wmTA.getText().split("¥n")));
-                ArrayList<String> schAst = new ArrayList<>(Arrays.asList(schTA.getText().split("¥n")));
+                ArrayList<String> astList = new ArrayList<>(Arrays.asList(wmTA.getText().split("\n")));
+                // ArrayList<String> schAst = new ArrayList<>(Arrays.asList(schTA.getText().split("\n")));  //  複数の質問文のとき？
+                ArrayList<String> schAst = new ArrayList<>();
+                schAst.add(schTF.getText());
 
                 ctable.schStep(astList, schAst);
             } else {
                 if (cmd.equals("追加")) {
-                    Rule r = new Rule(   );
-                    ctable.addRule(val);
+                    re.addRule();
                 }else if (cmd.equals("更新")) {
-                    if (!listPanel.isSelectionEmpty()) {
-                        int index = listPnl.getSelectedIndex();
-                        Rule val = (Rule) listPnl.getSelectedValue();
-
-                        ctable.udRule(val, , , )
+                    if (!rulePnl.isSelectionEmpty()) {
+                        int index = rulePnl.getSelectedIndex();
+                        Rule val = (Rule) rulePnl.getSelectedValue();
+                        re.udRule(val);
                     } else {
                         System.out.println("更新失敗（未選択のため）");
                     }
                 } else if (cmd.equals("削除")) {
-                    if (!listPanel.isSelectionEmpty()) {
-                        int index = listPnl.getSelectedIndex();
-                        Rule val = (Rule) listPnl.getSelectedValue();
+                    if (!rulePnl.isSelectionEmpty()) {
+                        int index = rulePnl.getSelectedIndex();
+                        Rule val = (Rule) rulePnl.getSelectedValue();
                         ctable.rmRule(val);
                     } else {
                         System.out.println("削除失敗（未選択のため）");
                     }
-                } 
+                }
             }
-            udRuleMod();
             status.setText(cmd + "の実行");
         }
 
@@ -125,6 +134,8 @@ public class ChainGUI extends JFrame {
             JTextField thenTF;
 
             RuleEditor() {
+                setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+
                 add(new JLabel("Name"));
                 nameTF= new JTextField(20);
                 add(nameTF);
@@ -140,11 +151,34 @@ public class ChainGUI extends JFrame {
                 add(doneBtn);
             }
 
-            RuleEditor(Rule rule) {
-                this();
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String nameText = nameTF.getText();
+                ArrayList<String> ifList = new ArrayList<>(Arrays.asList(ifTA.getText().split("\n")));
+                String thenText = thenTF.getText();
+    
+                if(rule == null) {
+                    ctable.addRule(nameText, ifList, thenText);
+                } else {
+                    ctable.udRule(new Rule(nameText, ifList, thenText));
+                }
+                udRuleMod();
+            }
+
+            void addRule() {
+                this.rule = null;
+
+                nameTF.setText("");
+                nameTF.setEditable(true);
+                ifTA.setText("");
+                thenTF.setText("");
+            }
+
+            void udRule(Rule rule) {
                 this.rule = rule;
 
                 nameTF.setText(rule.getName());
+                nameTF.setEditable(false);
                 StringBuilder sb = new StringBuilder();
                 for(String s : rule.getAntecedents()) {
                     sb.append(s);
@@ -153,19 +187,6 @@ public class ChainGUI extends JFrame {
                 ifTA.setText(sb.toString());
                 thenTF.setText(rule.getConsequent());
             }
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String nameText = nameTF.getText();
-                ArrayList<String> ifList = new ArrayList<>(Arrays.asList(ifTA.getText().split("¥n")));
-                String thenText = thenTF.getText();
-    
-                if(rule == null) {
-                    ctable.addRule(nameText, ifList, thenText);
-                } else {
-                    ctable.udRule(rule, )
-                }
-            }
         }
     }
 }
@@ -173,19 +194,18 @@ public class ChainGUI extends JFrame {
 abstract class ChainTable extends JPanel {
 
     ChainTable(String fileName) {
-        SpringLayout layout = new SpringLayout();  // GridBagLayoutの方がいいかも
-        setLayout(layout);
+        setLayout(null);
     }
 
     abstract ArrayList<Rule> getRules();
 
     abstract void schStep(ArrayList<String> astList, ArrayList<String> schAst);
 
-    abstract void paintPnls(ArrayList<StepResult> srlist);  // パネル（解）の描写
+    abstract void paintPnls(ArrayList<StepResult> srlist); // パネル（解）の描写
 
     abstract void addRule(String nameText, ArrayList<String> ifList, String thenText);
 
-    abstract void udRule(Rule rule, String name, ArrayList<String> antecedents, String consequent);
+    abstract void udRule(Rule rule);
 
     abstract void rmRule(Rule rule);
 }
