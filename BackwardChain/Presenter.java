@@ -15,9 +15,9 @@ class Presenter {
     }
 
     // 検索を順に追った結果を返すよう指示する(返却方法検討)
-    public ArrayList<StepResult> stepResults(String wmname, String target) {
-    	ArrayList<StepResult> stepresults = rulebasesystem.stepResult(wmname, target);
-    	view.showStepResult(stepresults);
+    public ArrayList<SearchStep> stepResults(String wmname, String target) {
+    	ArrayList<SearchStep> stepresults = rulebasesystem.stepResult(wmname, target);
+    	//view.showStepResult(stepresults);
     	return stepresults;
     }
 
