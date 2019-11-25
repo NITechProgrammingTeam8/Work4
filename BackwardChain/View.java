@@ -7,16 +7,8 @@ class View implements ViewInterface {
 	public void showStart() {
 		System.out.println("read ruledata finish");
 	}
-	//初期ルールデータ一覧表示メソッド
-	public ArrayList<Rule> showFirstRuleList(ArrayList<Rule> resultList) {
-		return resultList;
-	}
     // 推論順に探索結果返却メソッド
     public ArrayList<StepResult> showStepResult(ArrayList<StepResult> stepresults) {
-    	return stepresults;
-    }
-    // 推論順に探索結果返却メソッド【再】
-    public ArrayList<StepResult> showReStepResult(ArrayList<StepResult> stepresults) {
     	return stepresults;
     }
 	// ルール追加完了メソッド
