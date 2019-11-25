@@ -195,8 +195,10 @@ public class RuleBaseSystem {
     			tokenList.add("?x");
     		}
     		else if(secondToken.equals("is")) {
-    			tokenList.add("?x");
-    			tokenList.add("is");
+			tokenList.add("It");
+			tokenList.add("is-a");
+			tokenList.add("?x");
+			tokenPoint ++;
     		}
     	}
     	else if(firstToken.equals("Does")) {
