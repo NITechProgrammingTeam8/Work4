@@ -22,7 +22,7 @@ public class RuleBaseSystem {
     public static void main(String args[]){
 	fm = new FileManager();
 	//ファイルからルールの読み取り
-	//ArrayList<Rule> rules = fm.loadRules("CarShop.data");
+	//ArrayList<Rule> rules = fm.loadRules("CarShop2.data");
 	ArrayList<Rule> rules = fm.loadRules("InstantNoodle.data");
 	//ArrayList rules = fm.loadRules("AnimalWorld.data");
 
@@ -81,8 +81,9 @@ public class RuleBaseSystem {
     	}
     }
 
-    // 更新前ルールでの推論
-    public ArrayList<StepResult> stepResult(String wmname, String target) {
+    // 推論
+    // 本来は返すものは変えない
+    public ArrayList<SearchStep> stepResult(String wmname, String target) {
     	ArrayList<Rule> rules = new ArrayList<>();
     	if (fileFlag == true) {
     		rules = getFirstRules();
@@ -102,10 +103,11 @@ public class RuleBaseSystem {
 		*/
     	ArrayList<String> queries = NaturalLanguage(target);
 		rb.backwardChain(queries);
-		ArrayList<StepResult> answer = rb.getStepResults();
+		ArrayList<SearchStep> answer = rb.getSearchStep();
+		//ArrayList<SaveStepResult> answer = rb.getStepResults();
 		return answer;
     }
-	
+
     // ルールの追加
     public boolean addRule(String newRuleName, ArrayList<String> newRuleAntecedents, String newRuleConsequent) {
     	return rb.insertRule( new Rule(newRuleName, newRuleAntecedents, newRuleConsequent) );
@@ -210,7 +212,7 @@ public class RuleBaseSystem {
 
     		//三人称単数のsの処理
 			String s = secondToken.substring(secondToken.length()-1);
-			if(thirdToken.equals("have") & !s.equals("s")) {		
+			if(thirdToken.equals("have") & !s.equals("s")) {
 				thirdToken = "has";
     		}
     		else {
@@ -261,11 +263,14 @@ class RuleBase implements Serializable{
     String answer = null;
     Rule sub = null;
     ArrayList<Rule> subs;
-    ArrayList<StepResult> srs;
-    StepResult sr = new StepResult();
+    ArrayList<SaveStepResult> srs; // 後ろから探索するときに必要になる
+    SaveStepResult sr = new SaveStepResult();
     int miss;
     int overwrite;
     ArrayList<String> targets;
+    //ArrayList<StepResult> saveALL; // 保存用(StepResult)
+    ArrayList<StepResult> saveAnswer;  // 経路導出用
+    ArrayList<SearchStep> searchAnswer;  // 返却用
 
     RuleBase(ArrayList<Rule> theRules,ArrayList<String> theWm){
 	wm = theWm;
@@ -276,6 +281,9 @@ class RuleBase implements Serializable{
 	overwrite = 100000;
 	sr.shokika();
 	subs = new ArrayList<>();
+	//saveALL = new ArrayList<>();
+	saveAnswer = new ArrayList<>();
+	searchAnswer = new ArrayList<>();
     }
 
     public void setWm(ArrayList<String> theWm){
@@ -307,10 +315,45 @@ class RuleBase implements Serializable{
 		String anAnswer = instantiate(aQuery,binding);
 		System.out.println("Query: "+aQuery);
 		System.out.println("Answer:"+anAnswer);
+		saveAnswer = changeData();
+		searchAnswer.add( new SearchStep(anAnswer, saveAnswer) );
 	    }
 	} else {
 	    System.out.println("No");
+	    searchAnswer.add( new SearchStep(null, saveAnswer) );
 	}
+    }
+
+    private ArrayList<StepResult> changeData() {
+    	int remember = -1;
+    	ArrayList<StepResult> Link = new ArrayList<>(); // 返却するものの逆順(Link格納のため)
+    	ArrayList<StepResult> reLink = new ArrayList<>(); // 返却するもの
+    	for (int i = srs.size()-1; i >= 0; i--) {
+    		ArrayList<StepResult> addLink = new ArrayList<>(); // 子リンクを表すリンクリスト
+    		if (srs.get(i).getAF() == null) {
+    			StepResult change = new StepResult(null, null, srs.get(i).getA());
+    			Link.add(change);
+    			reLink.add(0, change);
+    		} else {
+    			remember = i;
+    			int count = 0;
+    			for (int j = srs.size()-1; j > remember; j--) {
+    				if (srs.get(j).getQF().getName().equals(srs.get(i).getAF().getName())) {
+    					addLink.add(Link.get(count));
+    				}
+    				count++;
+    			}
+    			StepResult change = new StepResult(addLink, srs.get(i).getAF(), srs.get(i).getA());
+    			Link.add(change);
+    			reLink.add(0, change);
+    		}
+    	}
+    	ArrayList<StepResult> addLink = new ArrayList<>();
+    	addLink.add(Link.get(Link.size()-1));
+    	StepResult change = new StepResult(addLink, null, srs.get(0).getQ());
+		Link.add(change);
+		reLink.add(0, change);
+		return reLink;
     }
 
     /**
@@ -481,17 +524,28 @@ class RuleBase implements Serializable{
 	return str1.startsWith("?");
     }
 
+    private boolean isNumber(String num) {
+        try {
+            Integer.parseInt(num);
+            return true;
+            } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     private void srsAdd(Rule questionField, String question, Rule answerField, String answer) {
     	if (questionField != null) {
     		String[] split = question.split(" ", 0);
-    		int number = Integer.parseInt(split[0].replaceAll("[^0-9]",""));
-    		if (number < subs.size()) {
-    			questionField = null;
-    			questionField = subs.get(number);
+    		if (isNumber(split[0])) {
+    			int number = Integer.parseInt(split[0].replaceAll("[^0-9]",""));
+    			if (number < subs.size()) {
+    				questionField = null;
+    				questionField = subs.get(number);
+    			}
     		}
     	}
     	if (miss != 0) {
-    		for (StepResult sr : srs) {
+    		for (SaveStepResult sr : srs) {
     			if (sr.getQ().equals(question)) {
     				overwrite = sr.getId();
     				sr.setAF(answerField);
@@ -508,13 +562,13 @@ class RuleBase implements Serializable{
     		srs.get(overwrite).setA(answer);
     		overwrite++;
     	} else {
-    		srs.add( new StepResult(questionField, question, answerField, answer) );
+    		srs.add( new SaveStepResult(questionField, question, answerField, answer) );
     		overwrite = 100000;
     	}
     }
 
-    public ArrayList<StepResult> getStepResults() {
-    	return srs;
+    public ArrayList<SearchStep> getSearchStep() {
+    	return searchAnswer;
     }
 
  // データ挿入用メソッド
@@ -761,7 +815,7 @@ class Rule implements Serializable{
  *
  *
  */
-class StepResult {
+class SaveStepResult {
 	private Rule questionField;
 	private Rule answerField;
 	private String question;
@@ -769,9 +823,9 @@ class StepResult {
 	private static int counter = 0;
 	private int id;
 
-	StepResult() { }
+	SaveStepResult() { }
 
-	StepResult(Rule theQF, String theQ, Rule theAF, String theA){
+	SaveStepResult(Rule theQF, String theQ, Rule theAF, String theA){
         this.questionField = theQF;
         this.question = theQ;
         this.answerField = theAF;
@@ -838,6 +892,79 @@ class StepResult {
     }
 }
 
+class StepResult {
+	private ArrayList<StepResult> addSR;
+	private Rule AnswerField;
+	private String Answer;
+
+	StepResult() { }
+
+	StepResult(ArrayList<StepResult> theAddSR, Rule theAF, String theA) {
+		this.addSR = theAddSR;
+		this.AnswerField = theAF;
+		this.Answer = theA;
+	}
+
+	/**
+     * リンクを返す．
+     *
+     * @return    本体を表す StepResult
+     */
+    public ArrayList<StepResult> getAddSR(){
+        return addSR;
+    }
+
+	/**
+     * ルールを返す．
+     *
+     * @return    本体を表す Rule
+     */
+    public Rule getAnswerField(){
+        return AnswerField;
+    }
+
+    /**
+     * 検索結果を返す．
+     *
+     * @return    本体を表す String
+     */
+    public String getAnswer(){
+        return Answer;
+    }
+}
+
+/**
+ * 探索結果のステップ結果を表すクラス．
+ *
+ *
+ */
+class SearchStep {
+	private String kekka;
+	private ArrayList<StepResult> keiro;
+
+	SearchStep(String theKekka, ArrayList<StepResult> theKeiro){
+        this.kekka = theKekka;
+        this.keiro = theKeiro;
+    }
+
+	/**
+     * 結果をString形式で返す．
+     *
+     * @return    本体を表す String
+     */
+    public String getKekka(){
+        return kekka;
+    }
+
+	/**
+     * ルールをArrayList形式で返す．
+     *
+     * @return    本体を表す ArrayList<StepResult>
+     */
+    public ArrayList<StepResult> getKeiro(){
+        return keiro;
+    }
+}
 
 class Unifier {
     StringTokenizer st1;

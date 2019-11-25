@@ -20,7 +20,7 @@ class Test {
 		*/
 
 		presenter.start(filename);
-		// 初期ルールの一覧を取得
+		// ルールの一覧を取得
 		ArrayList<Rule> ruleLists = presenter.fetchRules();
 		for (Rule ruleList : ruleLists) {
 			System.out.println("ruleName:" + ruleList.getName());
@@ -31,29 +31,83 @@ class Test {
 			System.out.println();
 		}
 
-		//targetData.add("Is my car inexpensive ?");
-		String target = "Is his car inexpensive ?";
-		ArrayList<StepResult> stepresults = presenter.stepResults(wmname, target);
+		//String target = "Is his car inexpensive ?";
+		String target = "What is an Accord Wagon ?";
+		//target = "Is his car stylish ?";
+		// target = "What does his car have ?"; // 質問そのものの推論ができない？
+		ArrayList<SearchStep> stepresults = presenter.stepResults(wmname, target);
 		System.out.println("【出力結果】");
-		for (StepResult stepresult : stepresults) {
-			Rule QF = stepresult.getQF();
-			String Q = stepresult.getQ();
-			Rule AF = stepresult.getAF();
-			String A = stepresult.getA();
-			if (QF != null) {
-				System.out.print("◇QuestionField: " + QF.getName());
+		for (SearchStep stepresult : stepresults) {
+			if (stepresult.getKekka() != null) {
+				System.out.println("Answer: " + stepresult.getKekka());
+				ArrayList<StepResult> keiro = stepresult.getKeiro();
+				for (StepResult keirounit : keiro) {
+					ArrayList<StepResult> addLink = keirounit.getAddSR();
+					Rule AF = keirounit.getAnswerField();
+					String A = keirounit.getAnswer();
+					if (addLink != null) {
+						for (StepResult addunit : addLink) {
+							if (addunit.getAnswerField() != null) {
+								System.out.println("◇Link rule: " + addunit.getAnswerField());
+							} else {
+								System.out.println("◇Link rule: No Link(Data is WM)");
+							}
+							System.out.println("◆Link: " + addunit.getAnswer());
+						}
+					} else {
+						System.out.println("◆Link: No Link(Data is WM)");
+					}
+					if (AF != null) {
+						System.out.println("□Answer Field: " + AF.getName());
+					} else {
+						System.out.println("□Answer Field: No rule");
+					}
+					System.out.println("■Answer: " + A);
+					System.out.println();
+				}
 			} else {
-				System.out.print("◇QuestionField: Target Question(No Field)");
+				System.out.println("Answer: No matching");
 			}
-			System.out.println("  ◆Question: " + Q);
-			if (AF != null) {
-				System.out.print("◇AnswerField: " + AF.getName());
-			} else {
-				System.out.print("◇AnswerField: WorkingSpace");
-			}
-			System.out.println("  ◆Answer: " + A);
-			System.out.println();
 		}
+
+
+		//targetData.add("Is my car inexpensive ?");
+		target = "Is his car inexpensive ?";
+		stepresults = presenter.stepResults(wmname, target);
+		System.out.println("【出力結果】");
+		for (SearchStep stepresult : stepresults) {
+			if (stepresult.getKekka() != null) {
+				System.out.println("Answer: " + stepresult.getKekka());
+				ArrayList<StepResult> keiro = stepresult.getKeiro();
+				for (StepResult keirounit : keiro) {
+					ArrayList<StepResult> addLink = keirounit.getAddSR();
+					Rule AF = keirounit.getAnswerField();
+					String A = keirounit.getAnswer();
+					if (addLink != null) {
+						for (StepResult addunit : addLink) {
+							if (addunit.getAnswerField() != null) {
+								System.out.println("◇Link rule: " + addunit.getAnswerField());
+							} else {
+								System.out.println("◇Link rule: No Link(Data is WM)");
+							}
+							System.out.println("◆Link: " + addunit.getAnswer());
+						}
+					} else {
+						System.out.println("◆Link: No Link(Data is WM)");
+					}
+					if (AF != null) {
+						System.out.println("□Answer Field: " + AF.getName());
+					} else {
+						System.out.println("□Answer Field: No rule");
+					}
+					System.out.println("■Answer: " + A);
+					System.out.println();
+				}
+			} else {
+				System.out.println("Answer: No matching");
+			}
+		}
+
 
 		// ルールの一覧を取得
 		ruleLists = presenter.fetchRules();
@@ -115,30 +169,6 @@ class Test {
 				System.out.println("antecedentName:" + antecedent);
 			}
 			System.out.println("ruleConsequent:" + ruleList.getConsequent());
-			System.out.println();
-		}
-
-		target = "What is an Accord Wagon ?";
-		stepresults = new ArrayList<>();
-		stepresults = presenter.stepResults(wmname, target);
-		System.out.println("【出力結果】");
-		for (StepResult stepresult : stepresults) {
-			Rule QF = stepresult.getQF();
-			String Q = stepresult.getQ();
-			Rule AF = stepresult.getAF();
-			String A = stepresult.getA();
-			if (QF != null) {
-				System.out.print("【再】◇QuestionField: " + QF.getName());
-			} else {
-				System.out.print("【再】◇QuestionField: Target Question(No Field)");
-			}
-			System.out.println("◆Question: " + Q);
-			if (AF != null) {
-				System.out.print("【再】◇AnswerField: " + AF.getName());
-			} else {
-				System.out.print("【再】◇AnswerField: WorkingSpace");
-			}
-			System.out.println("◆Answer: " + A);
 			System.out.println();
 		}
 
