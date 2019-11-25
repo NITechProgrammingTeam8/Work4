@@ -1,0 +1,581 @@
+\documentclass[12pt]{jarticle}
+
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{listings,jlisting}
+\usepackage{ascmac}
+\usepackage{amsmath,amssymb}
+\usepackage{comment}
+
+%ここからソースコードの表示に関する設定
+\lstset{
+  basicstyle={\ttfamily},
+  identifierstyle={\small},
+  commentstyle={\smallitshape},
+  keywordstyle={\small\bfseries},
+  ndkeywordstyle={\small},
+  stringstyle={\small\ttfamily},
+  frame={tb},
+  breaklines=true,
+  columns=[l]{fullflexible},
+  numbers=left,
+  xrightmargin=0zw,
+  xleftmargin=3zw,
+  numberstyle={\scriptsize},
+  stepnumber=1,
+  numbersep=1zw,
+  lineskip=-0.5ex
+}
+%ここまでソースコードの表示に関する設定
+
+\title{知能プログラミング演習II 課題4}
+\author{グループ8\\
+  29114142 湯浅範子\\
+}
+\date{2019年11月26日}
+
+\begin{document}
+\maketitle
+
+\paragraph{提出物} rep4(2914142.pdf),group08.zip
+\paragraph{グループ} グループ8
+\paragraph{メンバー}
+\begin{tabular}{|c|c|c|}
+  \hline
+  学生番号&氏名&貢献度比率\\
+  \hline\hline
+  29114003&青山周平&\\
+  \hline
+  29114060&後藤拓也&\\
+  \hline
+  29114116&増田大輝&\\
+  \hline
+  29114142&湯浅範子&\\
+  \hline
+  29119016&小中祐希&\\
+  \hline
+\end{tabular}
+
+\section{課題の説明}
+\begin{description}
+\item[必須課題4-1] まず，教科書3.2.1の「前向き推論」のプログラムと教科書3.2.2の「後向き推論」のプログラムとの動作確認をし，前向き推論と後ろ向き推論の違いを説明せよ．また，実行例を示してルールが選択される過程を説明せよ．説明の際には，LibreOfficeのDraw（コマンド soffice --draw）などのドロー系ツールを使ってp.106 図3.11やp.118 図3.12のような図として示すことが望ましい．
+\item[必須課題4-2] CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用事例（自分達の興味分野で良い）に書き換えて，前向き推論，および後ろ向き推論に基づく質問応答システムを作成せよ．どのような応用事例を扱うかは，メンバーで話し合って決めること．
+なお，ユーザの質問は英語や日本語のような自然言語が望ましいが，難しければ変数を含むパターン等でも可とする．
+\item[必須課題4-3] 上記4-2で実装した質問応答システムのGUIを作成せよ．質問に答える際の推論過程を可視化できることが望ましい．
+\item[発展課題4-4] 上記4-3で実装したGUIを発展させ，質問応答だけでなく，ルールの編集（追加，削除，変更）などについてもGUIで行えるようにせよ．
+\end{description}
+私は必須課題4-3に関わるプログラムを作成したため，それについて記述する．
+
+\section{必須課題4-3}
+\begin{screen}
+  上記4-2で実装した質問応答システムのGUIを作成せよ．質問に答える際の推論過程を可視化できることが望ましい．
+\end{screen}
+私の担当箇所は，与えられたプログラムをGUIから利用できるようにするためのメソッドやファイルの追加である．
+\subsection{手法}
+GUIの動作のためにMVPモデルを利用し，GUIから命令を受け動作プログラムに実行を依頼するPresenterを作成し，以下の機能を実装した．
+
+\begin{enumerate}
+\item 前向き推論
+	\begin{itemize}
+	\item 初期状態のルールとアサーションを用いた推論を行う
+	\item ルールの編集を行った後もアサーションを用いた推論を行う
+	\item 推論が行われた手順を保持し，GUI側に受け渡す
+	\item アサーションによる検索を行う(検索時の推論手順も返す)
+	\item ルールの一覧表示を行う
+	\item ルールに対する編集を行う
+	\end{itemize}
+\item 後ろ向き推論
+	\begin{itemize}
+	\item アサーションによる検索を行う
+	\item 推論探索手順を保持し，GUIに受け渡す
+	\item ルールに対する編集を行う
+	\end{itemize}
+\end{enumerate}
+
+1.については，前向き推論のプログラムに対して作成したPresenterに実装した．\\
+
+2.については，後ろ向き推論のプログラムに対して作成したPresenterに実装した．\\
+
+ルールの編集に関するメソッドの枠組みも作成したが，この部分の実装は増田君が担当したため詳細はそちらのレポートを参考にされたい．
+
+\subsection{実装}
+まず，前向き推論時に必要になるメソッドを順に示す．ここでは私が作成した以下の部分に関するメソッドを中心に記述する．
+
+\begin{itemize}
+	\item 初期状態のルールとアサーションを用いた推論を行う
+	\item ルールの編集を行った後にもう一度推論を行う
+	\item 推論が行われた手順を保持し，GUI側に受け渡す
+	\item アサーションによる検索を行う(検索時の推論手順も返す)
+	\item ルールの一覧表示を行う
+\end{itemize}
+
+始めに，前向き推論のPresenter.javaで作成したメソッドをソースコード\ref{presenter}に示す．
+\begin{lstlisting}[caption=Presenter.java(略),label=presenter]
+class Presenter {
+	private RuleBaseSystem rulebasesystem = new RuleBaseSystem();
+	・・・
+	// GUI起動時に初期データの読み込みと出力
+	public void start(ArrayList<String> firstAssertions, String fileName) {
+		rulebasesystem.start(firstAssertions, fileName);
+	}
+	// ルール更新後のデータから推論の再試行を行う
+	public void restart(ArrayList<String> assertions) {
+		ArrayList<Rule> rules = rulebasesystem.getRules();
+		rulebasesystem.restart(assertions, rules);
+	}
+	// 探索を順に追った結果を返すよう指示する
+	public ArrayList<StepResult> stepResult() {
+		ArrayList<StepResult> stepresults = rulebasesystem.getStepResults();
+		return stepresults;
+	}
+	・・・
+	// ルールの一覧表示を行うよう指示する
+	public ArrayList<Rule> fetchRules() {
+		ArrayList<Rule> ruleList = new ArrayList<>();
+		ruleList = rulebasesystem.getRules();
+		return ruleList;
+	}
+	// アサーションによる検索をするよう指示する
+	public ArrayList<ArrayList<SearchStep>> searchAssertion(ArrayList<String> targetData) {
+	ArrayList<ArrayList<SearchStep>> resultList = new ArrayList<>();
+		for (String target : targetData) {
+			resultList.add(rulebasesystem.searchAssertion(target));
+		}
+		return resultList;
+	}
+}
+\end{lstlisting}
+startメソッドとrestartメソッドでは，アサーションとルールを取得しそれを基に前向き推論を行うようにRuleBaseSystem.javaに実装を行った．fetchRulesメソッドは現在取得しているルールをgetRuleメソッドでRuleBaseクラスから取得し，それを返却することで実現させた．\par
+またstepResultメソッドでは，前向き推論を行う途中でその経路を保持し返却を行うことで実現させた．また返却のために新たにStepResultクラスを作成した．これについては後に詳しく記述する．\\
+
+次にアサーションによる検索をするよう指示するメソッドsearchAssertionとその関連メソッドをソースコード\ref{searchAssertion}に示す．
+\begin{lstlisting}[caption=searchAssertionメソッド,label=searchAssertion]
+// 検索を行い結果を返す(複数検索の場合は改良)
+public ArrayList<SearchStep> searchAssertion(String target) {
+	RuleBaseSystem.question = true;
+	answer = new ArrayList<>();
+	answerString = new ArrayList<>();
+	sss = new ArrayList<>();
+	List<StepResult> subSRs = new ArrayList<>();
+	NaturalLanguage(target);
+	for (int i = 0; i < answer.size(); i++) {
+		if (answerString.size() > 0) {
+			subSRs = searchSRs(answerString.get(i));
+			ss = new SearchStep(answer.get(i), subSRs);
+		} else {
+			ss = new SearchStep(answer.get(i), null);
+		}
+		sss.add(ss);
+		subSRs = new ArrayList<>();
+	}
+	Matcher.answer = new ArrayList<>();
+	Matcher.answerString = new ArrayList<>();
+	return sss;
+}
+// 探索経路のみの抽出
+public List<StepResult> searchSRs(String answerS) {
+	ArrayList<StepResult> SRs = getStepResults();
+	List<StepResult> subSRs = new ArrayList<>();
+	int target = -1;
+	for (int i = 0; i < SRs.size(); i++) {
+		String success = SRs.get(i).getSuccess().getName();
+		if (success.equals(answerS)) {
+			target = i;
+		}
+	}
+	subSRs = SRs.subList(0, target+1);
+	return subSRs;
+}
+\end{lstlisting}
+ここでは，後藤君が作成してくれた英文の然言語での検索を行うNaturalLanguageメソッドを活用して，探索結果とその時一致したアサーションを取得する．この時取得したアサーションと前向き推論で得られた探索経路を比較する．それが探索によって得られたアサーションだと明らかになった場合は，ここまでに得られる経路をsubListメソッドによってコピーし返却することで，探索結果に対する経路も得られるようにした．またこれもStepResult同様にSearchStepクラスを新たに作成して返却を行った．これについても後に詳しく記述する．\\
+
+次に，後ろ向き推論時に必要になるメソッドを順に示す．
+\begin{itemize}
+	\item アサーションによる検索を行う
+	\item 推論探索手順を保持し，GUIに受け渡す
+\end{itemize}
+
+これらの機能を実装するため，後ろ向き推論のPresenter.javaで作成したメソッドについてソースコード\ref{presenter2}に示す．
+\begin{lstlisting}[caption=Presenter.java(略),label=presenter2]
+class Presenter {
+	private RuleBaseSystem rulebasesystem = new RuleBaseSystem();
+	・・・
+	// 初期ルールデータの読み込み
+	public void start(String filename) {
+		rulebasesystem.start(filename);
+	}
+	// 検索を順に追った結果を返すよう指示する
+	public ArrayList<StepResult> stepResults(String wmname, String target) {
+		ArrayList<StepResult> stepresults = rulebasesystem.stepResult(wmname, target);
+		return stepresults;
+	}
+	・・・
+	// ルールの一覧表示を行うよう指示する
+	public ArrayList<Rule> fetchRules() {
+		ArrayList<Rule> ruleList = new ArrayList<>();
+		・・・
+		ruleList = rulebasesystem.fetchRules();
+		return ruleList;
+	}
+}
+\end{lstlisting}
+startメソッドでは，ファイルの読み込みによるルールの構築のみを行う．またfetchRulesでは現在所持しているルールをRuleBaseクラスからgetRulesメソッドで取得し返却を行うことで一覧表示が行えるようにした．\\
+
+探索を順に追った結果を返すためのメソッドstepResultsは，RuleBaseSystemクラスで次のソースコード\ref{stepResults}のように実装した．
+\begin{lstlisting}[caption=stepResultsメソッド,label=stepResults]
+// 後ろ向き推論
+public ArrayList<StepResult> stepResult(String wmname, String target) {
+	ArrayList<Rule> rules = new ArrayList<>();
+	if (fileFlag == true) {
+		rules = getFirstRules();
+		fileFlag = false;
+	} else {
+		rules = getRules();
+	}
+	ArrayList<String> wm = fm.loadWm(wmname);
+	rb = new RuleBase(rules,wm);
+	ArrayList<String> queries = NaturalLanguage(target);
+	rb.backwardChain(queries);
+	ArrayList<StepResult> answer = rb.getStepResults();
+	return answer;
+}
+\end{lstlisting}
+ここでも，後藤君が作成した英文の然言語での検索を行うNaturalLanguageメソッドを活用して探索を行い，その結果の経路を返却する．
+
+\subsection{実行例}
+GUIは青山君が作成するため，ここでは私が実装したPresenterの動作が正しく動作が行われているかどうかをTest.javaを作成して確認した．このとき動作確認の簡単のため，扱うデータは始めに与えられたCarData.dataとCarDataWM.dataとした．\\
+
+まずstartメソッドとrestartメソッドの動作確認を行った．Test.javaでプログラムを実行すると，教科書で示されている結果と同様の出力が得られた．ここからstartメソッドが正しく機能していることが確認できた．またrestartメソッドについても，増田君が作成してくれたルールを編集を行った後の推論の再試行では，存在しなくなったルールについての推論は行っていないことも確認できた．このことからrestartメソッドも正しく動作していることが確認できた．\\
+
+次にルールの一覧を表示するfetchRulesメソッドの実行結果を以下に示す．
+\begin{lstlisting}[caption=fetchRulesメソッドの実行結果,label=kekka1]
+ruleName:CarRule1
+antecedentName:?x is inexpensive
+ruleConsequent:?x is made in Japan
+ruleid:0
+
+ruleName:CarRule2
+antecedentName:?x is small
+ruleConsequent:?x is made in Japan
+ruleid:1
+
+・・・
+
+ruleName:CarRule14
+antecedentName:?x is a foreign car
+antecedentName:?x is a sports car
+antecedentName:?x is red
+antecedentName:?x has a big engine
+ruleConsequent:?x is a Ferrari F50
+ruleid:13
+
+ruleName:CarRule15
+antecedentName:?x is a foreign car
+antecedentName:?x is a good face
+ruleConsequent:?x is a Jaguar XJ8
+ruleid:14
+\end{lstlisting}
+確認すると，CarData.data内にあるデータを全て正しく表示できていることが確認できた．また今回はRuleクラスのインスタンスをより簡単に操作できるようidを加え，それも表示させた．これは0から始まっているため，ルールの名称の番号より全て1小さくなっているものの，idの割り当ても正しく行えていると確認された．\\
+
+次に，推論経路を表示するstepResultメソッドを実行したときの結果を示す．
+\begin{lstlisting}[caption=stepResultメソッドの実行結果,label=kekka2]
+◆ADD: my-car is inexpensive
+◇apply rule: CarRule1
+◆success: my-car is made in Japan
+
+◆ADD: my-car is made in Japan
+◆ADD: my-car has a VTEC engine
+◇apply rule: CarRule8
+◆success: my-car is a Honda
+
+◆ADD: my-car is a Honda
+◆ADD: my-car is stylish
+◆ADD: my-car has several color models
+◆ADD: my-car has several seats
+◆ADD: my-car is a wagon
+◇apply rule: CarRule11
+◆success: my-car is an Accord Wagon
+\end{lstlisting}
+この実行結果は，どのアサーションを用い(ADD)，どのルールが適用されたことで(apply\ rule)どのようなアサーションが新しく生成されたか(success)を示している．これは教科書やWM・ルールデータの参照により正しい推論手順が返されていると確認できた．またデータを変えても出力は正しく行われた．\\
+
+更に探索結果とその経路を出力するsearchAssertionメソッドの実行結果を示す．
+\begin{lstlisting}[caption=searchAssertionメソッドの実行結果,label=kekka3]
+検索質問：Is my car a Honda ?
+答え = Yes
+Data is new WM
+■ADD: my-car is inexpensive
+◇apply rule: CarRule1
+◆success: my-car is made in Japan
+■ADD: my-car is made in Japan
+■ADD: my-car has a VTEC engine
+◇apply rule: CarRule8
+◆success: my-car is a Honda
+
+検索質問：What does she car have ?
+答え = 
+No Data
+
+検索質問：What does my car have ?
+答え = color-models
+Data is initial WM
+答え = seats
+Data is initial WM
+
+検索質問：Is my car a Toyota ?
+答え = No
+No Data
+\end{lstlisting}
+この実行結果では，検索による結果と，その結果に対する導出経路を出力するようにした．ここでは，質問結果として考えられる4つの例について示す．\\
+
+1つ目は，答えがYes/Noで示され，出力結果が推論により得られたアサーションだった場合である．この時，「答え」にはYesと示され，アサーションが新しく導かれたものであると示す「Data is new WM」の出力の後，そのアサーションが導かれるまでの経路が算出される．\par
+2つ目は，質問が具体値を求めたがそれに値する具体値が発見できなかった場合である．この時は「答え」には何も表示されず，経路には「No Data」と表示される．\par
+3つ目は，答えが具体値で与えられ，得られたアサーションは初めからWMに入っていた場合である．この時「答え」には具体値が出力され，経路は「Data is initial WM」と表示され推論によって得られたデータではないことが示されている．\par
+4つ目は，答えがYes/Noで示され，質問に対応するアサーションが発見できなかった場合である．この時「答え」はNoと出力され，経路も「No Data」と表示される．\\
+
+出力方法の全てのパターンは以上の例の組み合わせによって得られるため，探索結果の出力も正しく行えていると確認できた．\\
+
+次に，後ろ向き推論についての実行結果を示す．\par
+ルールデータの一覧表示のメソッドについては，実行したところ前向き推論と同じ結果が得られたので，ルール編集を含め正しく一覧表示が行えていることが確認された．\\
+
+後ろ向き推論によって得られた探索経路の返却を行うstepResultsメソッドについては，以下に実行結果を示す．
+\begin{lstlisting}[caption=stepResultsメソッドの実行結果,label=kekka4]
+patarn = his-car is inexpensive
+queries = [his-car is inexpensive]
+Hypothesis:[his-car is inexpensive]
+Success WM
+his-car is inexpensive <=> his-car is inexpensive
+Yes
+{}
+binding: {}
+Query: his-car is inexpensive
+Answer:his-car is inexpensive
+【出力結果】
+◇QuestionField: Target Question(No Field)  ◆Question: his-car is inexpensive
+◇AnswerField: WorkingSpace  ◆Answer: his-car is inexpensive
+
+patarn = ?x is an Accord Wagon
+queries = [?x is an Accord Wagon]
+Hypothesis:[?x is an Accord Wagon]
+・・・
+Yes
+{?x38=his-car, ?x37=his-car, ?x10=his-car, ?x=his-car}
+binding: {?x38=his-car, ?x37=his-car, ?x10=his-car, ?x=his-car}
+tmp: ?x, result:  his-car
+Query: ?x is an Accord Wagon
+Answer:his-car is an Accord Wagon
+【出力結果】
+◇QuestionField: Target Question(No Field)  ◆Question: ?x is an Accord Wagon
+◇AnswerField: CarRule11  ◆Answer: ?x10 is an Accord Wagon
+
+◇QuestionField: CarRule11  ◆Question: ?x10 is a Honda
+◇AnswerField: CarRule8  ◆Answer: ?x37 is a Honda
+
+◇QuestionField: CarRule8  ◆Question: ?x37 is made in Japan
+◇AnswerField: CarRule1  ◆Answer: ?x38 is made in Japan
+
+◇QuestionField: CarRule1  ◆Question: ?x38 is inexpensive
+◇AnswerField: WorkingSpace  ◆Answer: his-car is inexpensive
+
+◇QuestionField: CarRule8  ◆Question: ?x37 has a VTEC engine
+◇AnswerField: WorkingSpace  ◆Answer: his-car has a VTEC engine
+
+◇QuestionField: CarRule11  ◆Question: ?x10 is stylish
+◇AnswerField: WorkingSpace  ◆Answer: his-car is stylish
+
+◇QuestionField: CarRule11  ◆Question: ?x10 has several color models
+◇AnswerField: WorkingSpace  ◆Answer: his-car has several color models
+
+◇QuestionField: CarRule11  ◆Question: ?x10 has several seats
+◇AnswerField: WorkingSpace  ◆Answer: his-car has several seats
+
+◇QuestionField: CarRule11  ◆Question: ?x10 is a wagon
+◇AnswerField: WorkingSpace  ◆Answer: his-car is a wagon
+\end{lstlisting}
+今回の探索経路では，検索文とそれに一致する答えの文章を探すため，出力は
+\begin{itemize}
+	\item 検索文がどこから(どのルールから)導かれたものかを表すQuestionField　
+	\item 検索文本体Question
+	\item 答えの文章がどこから(どのルールから)導かれたものかを表すAnswerField
+	\item 答えの文章本体Answer
+\end{itemize}
+の4つに分類して出力を行った．\par
+今回は2つの例を実行結果とした．1つ目は探索結果がWMに既にあった場合である．このとき探索経路は検索文と答えの文章，それぞれのFieldは無し(No Field)とWMである．2つ目は探索結果がWM似なかった場合である．この時，正しく結果を得られた経路のみを保持し出力できるようにした．さらに，それぞれがどのルールから得られた文章なのかがFieldによって簡単に分かるようになっている．これらの結果も，教科書やルールから正しいことが確認できた．
+
+\subsection{考察}
+プログラムの作成にあたり，今回の課題は以前使用したMVPモデルでの実装を考えた．以前増田君が作成したPresenterを参考にしながら，RuleBaseSystemプログラムを操作し，求める動作を行うようにPresenterからの指示で操作が行えるようにプログラムを行うことを考えた．\\
+
+まず始めに前向き推論に対するPresenterとその関連メソッドについて記述する．\\
+
+前向き推論では探索前に推論を行い，推論可能な全アサーションを導いている．そのため推論のみを行うメソッドと，ルールの変更があった際にもう一度推論をやり直すメソッドが必要になると考えられた．さらに課題にもあるように推論過程を可視化するため，推論手順を保持するメソッドを作成することも考えた．\par
+プログラム動作時はどのようなdataファイルや初期アサーションであっても，ユーザーが簡単に変更可能にする必要があると考えた．プログラムを改良することでファイルの名前と初期アサーションのリストを引数にし，その引数を基にして推論を行えるようにした．\par
+また，既存のRuleクラスとAssertionクラスでは推論過程を導く際にどのルールやアサーションを活用しているかを取得するのに手間がかかる．推論過程を格納する際にはどのアサーションを活用しているのかを分かりやすくする必要があると考えたため，ルールとアサーションの通し番号idを作成することで，それぞれを番号で管理出来るようにした．\\
+
+発展課題でルールの編集を行うが，ルールの編集を行ってしまうと今までに作成したアサーションが成立しなくなる場合があるため，ルールの編集後にはもう一度推論を行いアサーションを再構築する必要があると考えられた．話し合った結果，再構築の際ルールは編集後のものを用いるが，アサーションは新しく入力し直すと決めたため，アサーションリストのみ引数に持つrestartメソッドの作成を行った．始めの入力ではルールとアサーション共にString型のリストであるが，restartではルールは既にRule型のリストになっているため，始めの推論とは異なる動作をする．このことを考慮し，今回はコンストラクタを多重定義することで動作の違いに対応した．\\
+
+推論経路の導出については，与えられた実行結果から容易に導けるものではなかったため，プログラムを読み解きながら修正を加えた．このとき「どのアサーションを用い・どのルールを適用させることで・どんなアサーションが作成されたか」の情報によって推論手順が導けると考えた．そのため，これらの情報を推論順に格納できるクラスStepResultを新しく作成した．また推論方法から適用ルールと生成アサーションは1つであり，始めに加えられるアサーションは複数であるため，どのアサーションを用いるかのみリストを用い実装した．さらに，探索時には得られる結果(String)とそれを導いた導出経路(ArrayList$<$StepResult$>$)を出力するため，これらをまとめたSearchStepクラスを新たに作成し保持した．\par
+導出経路については，推論により得られたWMと一致する答えがどこから導かれたものなのかを検索し，答えがStepResultリストの新しく得られたアサーションであった場合は，そのアサーションを導くまでの部分の経路の抜き出しを行った．抜き出しについてはシャローコピーでも良いと考え，subListメソッドを用いて実装することを考えた．\\
+
+次に後ろ向き推論についてのPresenterとその関連メソッドについて記述する．\\
+
+後ろ向き推論では探索を行う際に推論を行うため，前向き推論と異なり探索時に導出経路の抜き出しを行う必要はない．WMが初めから与えられていたため，初期ルールデータのみの読み込みをstartメソッドで行った．しかし今回の課題ではルールデータとWMのデータを得た後に実際の操作を行うRuleBaseクラスのインスタンスを作成する形であった．この形ではRuleの情報がstart実行直後では得られない状態になり，解決のため別の変数を用意するなど工夫が必要であった．そのため，startではルールデータとWMデータのどちらもを同時に読み込みRuleBaseインスタンスを作成するか，startメソッド自体を作成しない方がプログラムをより効率よく利用できたのではないかと考えられた．\par
+また，前向き推論ではルールやアサーションにid番号を付与したが，プログラムを作成し改良を進める中で必要性があまり感じられなくなったため，後ろ向き推論では作成しなかった．ルールの一覧表示については，前向き推論と同じ考え方で実装した．\\
+
+探索経路については，「検索しようとしている質問文・その質問文がどこに(どのルールに)属しているか・得られた結果・結果がどこに(どのルールに)属しているか」の4つの情報により構成されると考えた．そのため推論中で常にこれらの情報を保持し，4つが正しく格納された段階でデータをまとめたStepResultクラスのインスタンスとして作成した．しかしプログラムをそのまま実行すると間違えた探索経路も格納されてしまう．そこで探索に失敗した場合はその情報を保持し，データを格納する際に失敗して得られた結果の上に上書きする形で書き込むことで，正しい推論手順のみを保持した経路を導けるようにした．\par
+さらに変数に通し番号がつけられていることを利用して，リストに通し番号に対応するルールを格納することを考えた．これにより探索失敗時や探索データをWMに発見したことによる変更時など，探索が戻った際の質問文がどのルールから得られているかを簡単に導けるようにした．\\
+
+また班員と相談した結果，GUIへの表示を行う際には結果の経路保持の際にリンクを用い，直前や直後のStepResultの情報が得られるようにしたほうが良いとなり，実装方法を変更した．このとき変更した定義についてのソースコードなどを以下に示す．後ろ向き推論については，結果の出力を行えるようにしていなかったため，結果と経路を格納するSearchStepクラスも作成した．
+\begin{lstlisting}[caption=実装方法の変更部,label=change]
+// 前向き推論
+class StepResult {
+	private ArrayList<StepResult> addSR; // リンク
+	private Rule apply;
+	private Assertion success;
+}
+// リンク作成メソッド
+private ArrayList<StepResult> findLink(ArrayList<StepResult> saveALL, ArrayList<Assertion> add) {
+  ArrayList<StepResult> addLink = new ArrayList<>();
+  for(int i = 0; i < add.size(); i++) {
+    for (int j = 0; j < saveALL.size(); j++) {
+      if (add.get(i).getName().equals(saveALL.get(j).getSuccess().getName())) {
+        addLink.add(saveALL.get(j));
+      }
+    }
+  }
+  return addLink;
+}
+// 後ろ向き推論
+class StepResult {
+	private ArrayList<StepResult> addSR;  // リンク
+	private Rule AnswerField;
+	private String Answer;
+}
+// リンクを所持したStepResultインスタンスの作成
+private ArrayList<StepResult> changeData() {
+  int remember = -1;
+  ArrayList<StepResult> Link = new ArrayList<>(); // 返却するものの逆順(Link格納のため)
+  ArrayList<StepResult> reLink = new ArrayList<>(); // 返却するもの
+  for (int i = srs.size()-1; i >= 0; i--) {
+    ArrayList<StepResult> addLink = new ArrayList<>(); // 子リンクを表すリンクリスト
+    if (srs.get(i).getAF() == null) {
+      StepResult change = new StepResult(null, null, srs.get(i).getA());
+      Link.add(change);
+      reLink.add(0, change);
+    } else {
+      remember = i;
+      int count = 0;
+      for (int j = srs.size()-1; j > remember; j--) {
+        if (srs.get(j).getQF().getName().equals(srs.get(i).getAF().getName())) {
+          addLink.add(Link.get(count));
+        }
+        count++;
+      }
+      StepResult change = new StepResult(addLink, srs.get(i).getAF(), srs.get(i).getA());
+      Link.add(change);
+      reLink.add(0, change);
+    }
+  }
+  ArrayList<StepResult> addLink = new ArrayList<>();
+  addLink.add(Link.get(Link.size()-1));
+  StepResult change = new StepResult(addLink, null, srs.get(0).getQ());
+  Link.add(change);
+  reLink.add(0, change);
+  return reLink;
+}
+\end{lstlisting}
+これらを実行した実行結果を示す(変更部は表示方法のみ)．
+\begin{lstlisting}[caption=実装方法変更後の実行結果,label=changekekka]
+// 前向き推論
+◇ADD Link rule: No Link(Data is WM)
+◆ADD: my-car is inexpensive
+□apply rule: CarRule1
+■success: my-car is made in Japan
+
+◇ADD Link rule: CarRule1 [?x is inexpensive]->?x is made in Japan
+◆ADD: my-car is made in Japan
+◇ADD Link rule: No Link(Data is WM)
+◆ADD: my-car has a VTEC engine
+□apply rule: CarRule8
+■success: my-car is a Honda
+
+◇ADD Link rule: CarRule8 [?x is made in Japan, ?x has a VTEC engine]->?x is a Honda
+◆ADD: my-car is a Honda
+◇ADD Link rule: No Link(Data is WM)
+◆ADD: my-car is stylish
+◇ADD Link rule: No Link(Data is WM)
+◆ADD: my-car has several color models
+◇ADD Link rule: No Link(Data is WM)
+◆ADD: my-car has several seats
+◇ADD Link rule: No Link(Data is WM)
+◆ADD: my-car is a wagon
+□apply rule: CarRule11
+■success: my-car is an Accord Wagon
+
+// 後ろ向き推論
+【出力結果】
+Answer: his-car is an Accord Wagon
+◇Link rule: CarRule11 [?x10 is a wagon]->?x10 is an Accord Wagon
+◆Link: ?x10 is an Accord Wagon
+□Answer Field: No rule
+■Answer: ?x is an Accord Wagon
+
+◇Link rule: CarRule8 [?x35 has a VTEC engine]->?x35 is a Honda
+◆Link: ?x35 is a Honda
+□Answer Field: CarRule11
+■Answer: ?x10 is an Accord Wagon
+
+◇Link rule: CarRule1 [?x36 is inexpensive]->?x36 is made in Japan
+◆Link: ?x36 is made in Japan
+□Answer Field: CarRule8
+■Answer: ?x35 is a Honda
+
+◇Link rule: No Link(Data is WM)
+◆Link: his-car is a wagon
+・・・
+◇Link rule: No Link(Data is WM)
+◆Link: his-car has a VTEC engine
+◇Link rule: No Link(Data is WM)
+◆Link: his-car is inexpensive
+□Answer Field: CarRule1
+■Answer: ?x36 is made in Japan
+
+◆Link: No Link(Data is WM)
+□Answer Field: No rule
+■Answer: his-car is inexpensive
+
+・・・
+
+◆Link: No Link(Data is WM)
+□Answer Field: No rule
+■Answer: his-car is a wagon
+\end{lstlisting}
+得られた実行結果では，自分の1つ前(1つ後)のリンク情報のルールとその時のデータについて表示を行った．ここからリンク情報が正しく格納され，経路の関係性が明確化したことが分かった．\\
+
+最後にプログラム全体に対する考察を行う．\\
+
+今回は初めての2週間課題であったが，出来るだけ早くプログラムを作成させるため，プログラムの全体像を意識した．具体的にはプログラムの大枠を作成した段階でそれを班員と共有し，出来るだけ全員が共通の認識を持ってプログラムが作成できるように努めた．しかし今回この方法はあまり上手くいかなかった．理由としては，大枠を作成したメソッドの引数や目的まで共有せずプログラムを作成し始めてしまったことにある．大まかなメソッドの内容を見て，各々が自分のプログラムに使いやすいよう使おうとプログラムを作成したため，メソッドの使用方法の認識が少しずつ異なってしまった．また大枠の変更が正しく伝わっておらず，実装方式が異なってしまったということもあった．\par
+情報を早くから共有すること自体は悪くない手段であったと考えるが，早めに詳細についても相談をしたり，変更があった場合は報告する必要性を強く感じる課題となった．\\
+
+また今回の課題では，一度作ったプログラムに修正を何度も重ねて求める結果を得た．そのため機能が修正前のものの拡張になってしまい，自由度が下がり冗長になったと感じられた．期間が短いため新しくプログラムを構築し直すことは難しいと考えられるが，一度本当にこの実装方法で効率よく実現できるのかを考えてプログラムする必要があると考えられた．\par
+今回は実装期間もあり「このような入力はない」や「このような状態にはならない」といった仮定のもと実装が行われた部分があったため，実装期間が長ければ，あらゆる可能性に耐えられるプログラムを作成する必要があると考えた．\\
+
+私が担当したプログラムは，他の班員に対してデータを渡したり受け取ったりする指示役の部分であったため，他の人が作成したプログラムと自身のプログラムの引数やデータ形式を合わせる必要があった．これらの調節をする中で，相手にとって使いやすい形式と自分が考えていた形式が異なることが多々あった．複数人でプログラムを行う際には，相手にとって使いやすく見やすいプログラムを作成する必要性を今まで以上に感じたので，コメントアウトや分かりやすい変数名・メソッド名なども今後気に掛けられるようにしたい．\\
+
+\section{感想}
+今回の課題では，与えられたプログラムで出力される内容とGUIで出力したい内容が異なっていたため，新しくメソッドや変数を用意しプログラム本体の改良を行わなければならなかったのが大変だった．また，受け渡しのプログラムが完成しなければ最終的なGUIの調整をすることが出来ないため，早く私のプログラムを完成させ，GUI側にプログラムを渡したいと考えていたが，デバッグ作業に時間がかかったため早く渡すことが出来なかった．今後は出来るだけ計画的にプログラムの作成を進めていけるようにしたい．\par
+また，今回のプログラムは他にもより効率の良い実装方法があると感じたので，他の人がどのような実装を行ったのか知りたいと感じた．\par
+MVPモデルについて今までより深く知ることが出来たが，Viewをあまり有効活用できなかった．今後の課題の中で機会があれば，さらに学んでいきたいと感じた．
+
+
+% 参考文献
+\begin{thebibliography}{99}
+\bibitem{Java新} 新谷虎松『Javaによる知能プログラミング入門』コロナ社，2002年．
+\bibitem{MVP1} java 美しい MVP の具体的なコード例, \url{https://code-examples.net/ja/q/ad7352} （2019年11月18日アクセス）.
+\bibitem{MVP2} Hatena Blog Konifar's WIP, \url{http://konifar.hatenablog.com/entry/2015/04/17/010606} （2019年11月18日アクセス）.
+\bibitem{Instance} Java Master Java クラスのインスタンス化・初期化とは？, \url{http://carey.link/java/java-instance} （2019年11月18日アクセス）.
+\bibitem{InstanceE} Eclipseではじめるプログラミング（7）： Javaの「クラス」と「インスタンス」を理解する (1/2), \url{https://www.atmarkit.co.jp/ait/articles/0503/19/news020.html} （2019年11月18日アクセス）.
+\bibitem{clone} 【Java入門】Listのコピーとcloneメソッドの使い方, \url{https://www.sejuku.net/blog/19769} （2019年11月25日アクセス）.
+\bibitem{numcheck} [Java共通部品] 数値チェック, \url{https://blog.java-reference.com/common-check-number/} （2019年11月25日アクセス）.
+
+\end{thebibliography}
+
+\end{document}
