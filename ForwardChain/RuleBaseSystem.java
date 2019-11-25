@@ -538,21 +538,21 @@ class RuleBase {
 	fileName = "InstantNoodle.data";
         wm = new WorkingMemory();
         //CarShopWm.data
-
+	/*
         wm.addAssertion("my-car is inexpensive");
         wm.addAssertion("my-car has a VTEC engine");
         wm.addAssertion("my-car is stylish");
         wm.addAssertion("my-car has several color models");
         wm.addAssertion("my-car has several seats");
         wm.addAssertion("my-car is a wagon");
-        /*
+        */
         //InstantNoodle.data
         wm.addAssertion("It is expensive");
         wm.addAssertion("It is a popular noodle");
         wm.addAssertion("It has a kitsune");
         wm.addAssertion("It has a green package");
         wm.addAssertion("It has several udon noodles");
-        */
+        
         rules = new ArrayList<Rule>();
         loadRules(fileName);
         srs = new ArrayList<StepResult>();
