@@ -6,7 +6,6 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
-
 public class FwdChainGUI extends ChainGUI {
     public static void main(String args[]) {
         FwdChainGUI frame = new FwdChainGUI("前向き推論", "CarShop.data");
@@ -29,6 +28,7 @@ class FwdChainTable extends ChainTable {
     View view;
     Presenter pres;
     HashMap<StepResult, StepPanel> stepMap;
+    HashMap<StepResult, EdgePanel> edgeMap;
 
     FwdChainTable(String fileName) {
         super(fileName);
@@ -36,6 +36,7 @@ class FwdChainTable extends ChainTable {
         pres = new Presenter(view);
         pres.start(new ArrayList<String>(), fileName);
         stepMap = new HashMap<>();
+        edgeMap = new HashMap<>();
     }
 
     ArrayList<Rule> getRules() {
@@ -43,43 +44,50 @@ class FwdChainTable extends ChainTable {
     }
 
     @Override
-    void schStep(ArrayList<String> astList,  ArrayList<String> schAst) {  // schAst: 前向き推論時はnullも許容したい
+    void schStep(ArrayList<String> astList, ArrayList<String> schAst) { // schAst: 前向き推論時はnullも許容したい
         pres.restart(astList);
         ArrayList<StepResult> stepList = pres.stepResult();
         paintPnls(stepList);
-        
-        if(schAst.equals("")) {
+
+        if (schAst.get(0).equals("")) {  // 複数の質問文は非対応
             System.out.println("WARNING: 検索文の格納に失敗");
         } else {
-            pres.searchAssertion(schAst);
-            ArrayList<StepResult> resList = view.showSearchAssertion();
-            rePaintPnls(resList);
+            ArrayList<ArrayList<SearchStep>> resList = pres.searchAssertion(schAst); // 型は[質問のリスト]<[質問に対する複数の回答<[回答の導出]>]>，Whatで問われる質問は回答が複数ある場合があるから
+            repaintPnls(resList.get(0)); // 複数の質問文は非対応
         }
     }
 
     @Override
-    void paintPnls(ArrayList<StepResult> srlist) {
+    void paintPnls(ArrayList<StepResult> srList) {
         stepMap.clear();
-        for(StepResult sr : srlist) {
+        edgeMap.clear();
+        for (StepResult sr : srList) {
             StepPanel sp = new StepPanel(sr);
-            for(Assertion ast : sr.getAdd()) {
-                // 自分へのedgeを生やす．ここでやるか一通りspを作った後にするか
-            }
             stepMap.put(sr, sp);
-
             // gridbagpaneにして，相対位置はStepPanelのフィールドに保持するか
             add(sp);
 
-            // EdgePanel ep = n.getEdges();  // 各ノードは，リンクをどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
-            // // layout.putConstraint(, ep, , , , );  // SpringLayoutだとこれの定義に条件分岐が必要そう
-            // add(ep);
+            for (StepResult from : sr.getAddSR()) {
+                StepPanel fromPnl = stepMap.get(from);
+                EdgePanel ep = new EdgePanel(fromPnl, sp);
+                edgeMap.put(sr, ep);  // 各StepPanelは，リンク(EdgePanel)をどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
+                // layout.putConstraint(, ep, , , , ); // SpringLayoutだとこれの定義に条件分岐が必要そう
+                add(ep);
+            }
+
         }
     }
-    
-    void repaintPnls(ArrayList<StepResult> reslist) {  // 前向き推論においては，PaintPnlsと別に描写の更新が後にある
-        for (StepResult res : reslist) {
-            stepMap.get(res).passing();
-            
+
+    void repaintPnls(ArrayList<SearchStep> resList) { // 前向き推論においては，PaintPnlsと別に描写の更新が後にある
+        // for (SearchStep solve : resList) { // solveを切り替えて表示する必要がある．すなわちCardLayout
+        // for(StepResult sp : solve.getKeiro()) {
+        // stepMap.get(sp).passing();
+        // }
+        // }
+
+        SearchStep solve = resList.get(0);
+        for (StepResult sp : solve.getKeiro()) {
+            edgeMap.get(sp).passing();
         }
     }
 
@@ -87,11 +95,11 @@ class FwdChainTable extends ChainTable {
         pres.addRule(nameText, ifList, thenText);
     }
 
-    void udRule(Rule rule, String name, ArrayList<String> antecedents, String consequent) {
-        return false;
+    void udRule(Rule rule) {
+        pres.updateRule(rule);
     }
 
     void rmRule(Rule rule) {
-        return false;
+        pres.deleteRule(rule);
     }
 }
