@@ -10,12 +10,6 @@ import java.util.List;
 public class ChainGUI extends JFrame {
     ChainTable ctable;
 
-    public static void main(String args[]) {
-        FwdChainGUI frame = new FwdChainGUI("前向き推論", "CarShop.data");
-        // BwdChainGUI frame = new BwdChainGUI("後向き推論", "CarShop.data");
-        frame.setVisible(true);
-    }
-
     ChainGUI(String title) {
         setTitle(title);
         int appWidth = 1500;
@@ -25,8 +19,8 @@ public class ChainGUI extends JFrame {
     }
 
     class MenuPanel extends JPanel implements ActionListener {
-        JTextArea wmTexts;
-        JTextField schText;
+        JTextArea wmTA;
+        JTextArea schTA;
         ArrayList<Rule> ruleList;
         DefaultListModel ruleMod;
         JList rulePnl;
@@ -35,22 +29,18 @@ public class ChainGUI extends JFrame {
         MenuPanel() {
             addWindowListener(new WindowAdapter() {
                 public void windowOpened(WindowEvent e) {
-                    ruleList = ctable.getRules();
-                    for (Rule r : ruleList) {
-                        ruleMod.addElement(r);
-                    }
+                    udRuleMod();
                 }
             });
             JPanel schPnl = new JPanel();
 
-            wmTexts = new JTextArea(10, 35);
-            schText = new JTextField(20);
+            wmTA = new JTextArea(10, 35);
+            schTA = new JTextArea(3, 30);
 
             JButton schBtn = new JButton("検索");
             schBtn.addActionListener(this);
 
-            schPnl.add(wmTexts);
-            schPnl.add(schText);
+            schPnl.add(schTA);
             schPnl.add(schBtn);
 
             JPanel editPnl = new JPanel();
@@ -72,7 +62,10 @@ public class ChainGUI extends JFrame {
             rmBtn.addActionListener(this);
             btnPnl.add(rmBtn);
 
+            RuleEditor rp = new RuleEditor();
+
             editPnl.add(btnPnl);
+            editPnl.add(re);
 
             status = new JLabel();
             Container contentPane = getContentPane();
@@ -81,80 +74,118 @@ public class ChainGUI extends JFrame {
             contentPane.add(status, BorderLayout.SOUTH);
         }
 
+        void udRuleMod() {
+            ruleList = ctable.getRules();
+            ruleMod.clear();
+            for (Rule r : ruleList) {
+                ruleMod.addElement(r);
+            }
+        }
+
         @Override
         public void actionPerformed(ActionEvent e) {
             String cmd = e.getActionCommand();
 
-            String param = "失敗";
             if (cmd.equals("検索")) {
-                String[] arg = wmTexts.getText().split("¥n");
-                ArrayList<String> astList = new ArrayList<>(Arrays.asList(arg));
-
-                String schAst = schText.getText();
+                ArrayList<String> astList = new ArrayList<>(Arrays.asList(wmTA.getText().split("¥n")));
+                ArrayList<String> schAst = new ArrayList<>(Arrays.asList(schTA.getText().split("¥n")));
 
                 ctable.schStep(astList, schAst);
-                param = "実行";
             } else {
-                // if (cmd.equals("追加")) {
-                //     Rule r = new Rule(   );
-                //     if (ctable.addRule(val)) {
-                //         ruleMod.addElement(r);
-                //         param = "成功";
-                //     }
-                // }else if (cmd.equals("更新")) {
-                //     if (!listPanel.isSelectionEmpty()) {
-                //         int index = listPnl.getSelectedIndex();
-                //         Rule val = (Rule) listPnl.getSelectedValue();
+                if (cmd.equals("追加")) {
+                    Rule r = new Rule(   );
+                    ctable.addRule(val);
+                }else if (cmd.equals("更新")) {
+                    if (!listPanel.isSelectionEmpty()) {
+                        int index = listPnl.getSelectedIndex();
+                        Rule val = (Rule) listPnl.getSelectedValue();
 
-                //         // 更新処理
-
-                //         if (ctable.udRule(val, , , )) {
-                //             model.set(index, r);  // Ruleインスタンス自体が書き換わっているが，これは必要？
-                //             param = "成功";
-                //         }
-                //     } else {
-                //         System.out.println("更新失敗（未選択のため）");
-                //     }
-                // } else if (cmd.equals("削除")) {
-                //     if (!listPanel.isSelectionEmpty()) {
-                //         int index = listPnl.getSelectedIndex();
-                //         Rule val = (Rule) listPnl.getSelectedValue();
-                //         if (ctable.rmRule(val)) {
-                //             ruleMod.remove(index);
-                //             param = "成功";
-                //         }
-                //     } else {
-                //         System.out.println("削除失敗（未選択のため）");
-                //     }
-                // } 
+                        ctable.udRule(val, , , )
+                    } else {
+                        System.out.println("更新失敗（未選択のため）");
+                    }
+                } else if (cmd.equals("削除")) {
+                    if (!listPanel.isSelectionEmpty()) {
+                        int index = listPnl.getSelectedIndex();
+                        Rule val = (Rule) listPnl.getSelectedValue();
+                        ctable.rmRule(val);
+                    } else {
+                        System.out.println("削除失敗（未選択のため）");
+                    }
+                } 
             }
-            status.setText(cmd + "の" + param);
+            udRuleMod();
+            status.setText(cmd + "の実行");
+        }
+
+        class RuleEditor extends JPanel implements ActionListener {
+            Rule rule;
+            JTextField nameTF;
+            JTextArea ifTA;
+            JTextField thenTF;
+
+            RuleEditor() {
+                add(new JLabel("Name"));
+                nameTF= new JTextField(20);
+                add(nameTF);
+                add(new JLabel("if"));
+                ifTA = new JTextArea(10, 20);
+                add(ifTA);
+                add(new JLabel("then"));
+                thenTF = new JTextField(20);
+                add(thenTF);
+
+                JButton doneBtn = new JButton("完了");
+                doneBtn.addActionListener(this);
+                add(doneBtn);
+            }
+
+            RuleEditor(Rule rule) {
+                this();
+                this.rule = rule;
+
+                nameTF.setText(rule.getName());
+                StringBuilder sb = new StringBuilder();
+                for(String s : rule.getAntecedents()) {
+                    sb.append(s);
+                    sb.append("\n");
+                }
+                ifTA.setText(sb.toString());
+                thenTF.setText(rule.getConsequent());
+            }
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String nameText = nameTF.getText();
+                ArrayList<String> ifList = new ArrayList<>(Arrays.asList(ifTA.getText().split("¥n")));
+                String thenText = thenTF.getText();
+    
+                if(rule == null) {
+                    ctable.addRule(nameText, ifList, thenText);
+                } else {
+                    ctable.udRule(rule, )
+                }
+            }
         }
     }
 }
 
-class FwdChainGUI extends ChainGUI {
-    FwdChainGUI(String title, String ruleFileName) {
-        super(title);
-        ctable = new FwdChainTable(ruleFileName);
-        JPanel mainPnl = ctable;
-        JPanel menuPnl = new MenuPanel();
+abstract class ChainTable extends JPanel {
 
-        Container contentPane = getContentPane();
-        contentPane.add(mainPnl, BorderLayout.CENTER);
-        contentPane.add(menuPnl, BorderLayout.WEST);
+    ChainTable(String fileName) {
+        SpringLayout layout = new SpringLayout();  // GridBagLayoutの方がいいかも
+        setLayout(layout);
     }
-}
 
-class BwdChainGUI extends ChainGUI {
-    BwdChainGUI(String title, String ruleFileName) {
-        super(title);
-        ctable = new BwdChainTable(ruleFileName);
-        JPanel mainPnl = ctable;
-        JPanel menuPnl = new MenuPanel();
+    abstract ArrayList<Rule> getRules();
 
-        Container contentPane = getContentPane();
-        contentPane.add(mainPnl, BorderLayout.CENTER);
-        contentPane.add(menuPnl, BorderLayout.WEST);
-    }
+    abstract void schStep(ArrayList<String> astList, ArrayList<String> schAst);
+
+    abstract void paintPnls(ArrayList<StepResult> srlist);  // パネル（解）の描写
+
+    abstract void addRule(String nameText, ArrayList<String> ifList, String thenText);
+
+    abstract void udRule(Rule rule, String name, ArrayList<String> antecedents, String consequent);
+
+    abstract void rmRule(Rule rule);
 }

@@ -6,7 +6,26 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
-public class FwdChainTable extends ChainTable {
+
+public class FwdChainGUI extends ChainGUI {
+    public static void main(String args[]) {
+        FwdChainGUI frame = new FwdChainGUI("前向き推論", "CarShop.data");
+        frame.setVisible(true);
+    }
+
+    FwdChainGUI(String title, String ruleFileName) {
+        super(title);
+        ctable = new FwdChainTable(ruleFileName);
+        JPanel mainPnl = ctable;
+        JPanel menuPnl = new MenuPanel();
+
+        Container contentPane = getContentPane();
+        contentPane.add(mainPnl, BorderLayout.CENTER);
+        contentPane.add(menuPnl, BorderLayout.WEST);
+    }
+}
+
+class FwdChainTable extends ChainTable {
     View view;
     Presenter pres;
     HashMap<StepResult, StepPanel> stepMap;
@@ -24,18 +43,18 @@ public class FwdChainTable extends ChainTable {
     }
 
     @Override
-    boolean schStep(ArrayList<String> astList, String schAst) {  // schAst: 前向き推論時はnullも許容したい
-        ArrayList<StepResult> stepList = pres.restart(astList);
+    void schStep(ArrayList<String> astList,  ArrayList<String> schAst) {  // schAst: 前向き推論時はnullも許容したい
+        pres.restart(astList);
+        ArrayList<StepResult> stepList = pres.stepResult();
         paintPnls(stepList);
         
         if(schAst.equals("")) {
-            System.out.println("WARNING: 検索文の格納に失敗");  // 後向き推論だったらここで止める
+            System.out.println("WARNING: 検索文の格納に失敗");
         } else {
             pres.searchAssertion(schAst);
             ArrayList<StepResult> resList = view.showSearchAssertion();
-            paintPnls(resList);
+            rePaintPnls(resList);
         }
-        return true;
     }
 
     @Override
@@ -64,15 +83,15 @@ public class FwdChainTable extends ChainTable {
         }
     }
 
-    boolean addRule(Rule rule) {
+    void addRule(String nameText, ArrayList<String> ifList, String thenText) {
+        pres.addRule(nameText, ifList, thenText);
+    }
+
+    void udRule(Rule rule, String name, ArrayList<String> antecedents, String consequent) {
         return false;
     }
 
-    boolean udRule(Rule rule, String name, ArrayList<String> antecedents, String consequent) {
-        return false;
-    }
-
-    boolean rmRule(Rule rule) {
+    void rmRule(Rule rule) {
         return false;
     }
 }

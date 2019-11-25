@@ -6,7 +6,25 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
-public class BwdChainTable extends ChainTable {
+public class BwdChainGUI extends ChainGUI {
+    public static void main(String args[]) {
+        BwdChainGUI frame = new BwdChainGUI("後向き推論", "CarShop.data");
+        frame.setVisible(true);
+    }
+
+    BwdChainGUI(String title, String ruleFileName) {
+        super(title);
+        ctable = new BwdChainTable(ruleFileName);
+        JPanel mainPnl = ctable;
+        JPanel menuPnl = new MenuPanel();
+
+        Container contentPane = getContentPane();
+        contentPane.add(mainPnl, BorderLayout.CENTER);
+        contentPane.add(menuPnl, BorderLayout.WEST);
+    }
+}
+
+class BwdChainTable extends ChainTable {
     View view;
     Presenter pres;
 
