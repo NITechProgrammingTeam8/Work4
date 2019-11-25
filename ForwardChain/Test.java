@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
 
+
 /*
  * Presenter動作確認用ファイル
  * Viewを上手く利用できていない印象
@@ -19,28 +20,34 @@ class Test {
     	firstAssertions.add("my-car is a wagon");
 		presenter.start(firstAssertions, fileName);
 
+
 		System.out.println();
 		ArrayList<StepResult> stepresults = presenter.stepResult();
 		for (StepResult stepresult : stepresults) {
-			ArrayList<Assertion> add = stepresult.getAdd();
+			ArrayList<StepResult> addLink = stepresult.getAddSR();
 			Rule apply = stepresult.getApply();
 			Assertion success = stepresult.getSuccess();
-			if (add.size() > 0) {
-				for (Assertion addunit : add) {
-					System.out.println("◆ADD: " + addunit.getName());
+			if (addLink != null) {
+				for (StepResult addunit : addLink) {
+					if (addunit.getApply() != null) {
+						System.out.println("◇ADD Link rule: " + addunit.getApply());
+					} else {
+						System.out.println("◇ADD Link rule: No Link(Data is WM)");
+					}
+					System.out.println("◆ADD: " + addunit.getSuccess().getName());
 				}
 			} else {
-				System.out.println("◆ADD: No data");
+				System.out.println("◆ADD: No Link(Data is WM)");
 			}
 			if (apply != null) {
-				System.out.println("◇apply rule: " + apply.getName());
+				System.out.println("□apply rule: " + apply.getName());
 			} else {
-				System.out.println("◇apply rule: No rule");
+				System.out.println("□apply rule: No rule");
 			}
 			if (success != null) {
-				System.out.println("◆success: " + success.getName());
+				System.out.println("■success: " + success.getName());
 			} else {
-				System.out.println("◆success: No data");
+				System.out.println("■success: No data");
 			}
 			System.out.println();
 		}
@@ -61,12 +68,17 @@ class Test {
 						if (keiro.size() != 0) {
 							System.out.println("Data is new WM");
 							for (StepResult unitKeiro : keiro) {
-								ArrayList<Assertion> add = unitKeiro.getAdd();
+								ArrayList<StepResult> addLink = unitKeiro.getAddSR();
 								Rule apply = unitKeiro.getApply();
 								Assertion success = unitKeiro.getSuccess();
-								if (add.size() > 0) {
-									for (Assertion addunit : add) {
-										System.out.println("■ADD: " + addunit.getName());
+								if (addLink != null) {
+									for (StepResult addunit : addLink) {
+										if (addunit.getApply() != null) {
+											System.out.println("◇ADD Link rule: " + addunit.getApply());
+										} else {
+											System.out.println("◇ADD Link rule: No Link(Data is WM)");
+										}
+										System.out.println("◆ADD: " + addunit.getSuccess().getName());
 									}
 								} else {
 									System.out.println("■ADD: No data");
@@ -97,6 +109,7 @@ class Test {
 			System.out.println();
 		}
 
+		/*
 		// ルールの一覧を取得
 		// IDの動きが微妙
 		ArrayList<Rule> ruleLists = presenter.fetchRules();
@@ -253,5 +266,6 @@ class Test {
 			}
 			System.out.println();
 		}
+		*/
 	}
 }

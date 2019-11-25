@@ -528,26 +528,29 @@ class RuleBase {
     Assertion success;
     WorkingMemory cash;
     Rule applyUnit;
+    ArrayList<StepResult> saveALL;
+    ArrayList<StepResult> addLink;
 
   RuleBase(){
-        //fileName = "CarShop.data";
+        //fileName = "CarShop2.data";
 	fileName = "InstantNoodle.data";
         wm = new WorkingMemory();
         //CarShopWm.data
-        /*
+
         wm.addAssertion("my-car is inexpensive");
         wm.addAssertion("my-car has a VTEC engine");
         wm.addAssertion("my-car is stylish");
         wm.addAssertion("my-car has several color models");
         wm.addAssertion("my-car has several seats");
         wm.addAssertion("my-car is a wagon");
-        */
+        /*
         //InstantNoodle.data
         wm.addAssertion("It is expensive");
         wm.addAssertion("It is a popular noodle");
         wm.addAssertion("It has a kitsune");
         wm.addAssertion("It has a green package");
         wm.addAssertion("It has several udon noodles");
+        */
         rules = new ArrayList<Rule>();
         loadRules(fileName);
         srs = new ArrayList<StepResult>();
@@ -555,12 +558,18 @@ class RuleBase {
         apply = new ArrayList<>();
         cash = new WorkingMemory();
         applyUnit = null;
+        saveALL = new ArrayList<>();
+        addLink = new ArrayList<>();
     }
 
     RuleBase(ArrayList<String> firstAssertions, String fileName){
         wm = new WorkingMemory();
+        saveALL = new ArrayList<>();
         for (String firstAssertion : firstAssertions) {
         	wm.addAssertion(firstAssertion);
+        	sr = new StepResult(null, null, wm.getSuccess());
+        	saveALL.add(sr);
+        	//System.out.println("ほい" + wm.getSuccess().getName());
         }
         rules = new ArrayList<Rule>();
         loadRules(fileName);
@@ -569,12 +578,16 @@ class RuleBase {
         apply = new ArrayList<>();
         cash = new WorkingMemory();
         applyUnit = null;
+        addLink = new ArrayList<>();
     }
 
     RuleBase(ArrayList<String> assertions, ArrayList<Rule> rules) {
     	wm = new WorkingMemory();
+    	saveALL = new ArrayList<>();
     	for (String assertion : assertions) {
         	wm.addAssertion(assertion);
+        	sr = new StepResult(null, null, wm.getSuccess());
+        	saveALL.add(sr);
         }
     	this.rules = rules;
     	for(int i = 0 ; i < rules.size() ; i++){
@@ -585,6 +598,7 @@ class RuleBase {
         apply = new ArrayList<>();
         cash = new WorkingMemory();
         applyUnit = null;
+        addLink = new ArrayList<>();
     }
 
     //public ArrayList memory() {
@@ -621,7 +635,10 @@ class RuleBase {
                             wm.addAssertion(newAssertion);
                             success = wm.getSuccess();
                             applyUnit = apply.get(apply.size() - 1);
-                            sr = new StepResult(add, applyUnit, success);
+                            // ここで実現
+                            addLink = findLink(saveALL, add);
+                            sr = new StepResult(addLink, applyUnit, success);
+                            saveALL.add( sr );
                             srs.add( sr );
                             apply = new ArrayList<>();
                             applyUnit = null;
@@ -639,6 +656,18 @@ class RuleBase {
             }
         } while(newAssertionCreated);
         System.out.println("No rule produces a new assertion");
+    }
+
+    private ArrayList<StepResult> findLink(ArrayList<StepResult> saveALL, ArrayList<Assertion> add) {
+    	ArrayList<StepResult> addLink = new ArrayList<>();
+    	for(int i = 0; i < add.size(); i++) {
+    		for (int j = 0; j < saveALL.size(); j++) {
+    			if (add.get(i).getName().equals(saveALL.get(j).getSuccess().getName())) {
+    				addLink.add(saveALL.get(j));
+    			}
+    		}
+    	}
+    	return addLink;
     }
 
     private String printWorkingMemory(WorkingMemory wm) {
@@ -909,12 +938,13 @@ class Assertion {
  *
  */
 class StepResult {
-	private ArrayList<Assertion> add;
+	//private ArrayList<Assertion> add;
+	private ArrayList<StepResult> addSR;
 	private Rule apply;
 	private Assertion success;
 
-	StepResult(ArrayList<Assertion> theAdd, Rule theApply, Assertion theSuccess){
-        this.add = theAdd;
+	StepResult(ArrayList<StepResult> theAddSR, Rule theApply, Assertion theSuccess){
+        this.addSR = theAddSR;
         this.apply = theApply;
         this.success = theSuccess;
     }
@@ -924,8 +954,8 @@ class StepResult {
      *
      * @return    本体を表す ArrayList<Assertion>
      */
-    public ArrayList<Assertion> getAdd(){
-        return add;
+    public ArrayList<StepResult> getAddSR(){
+        return addSR;
     }
 
 	/**
