@@ -7,68 +7,67 @@ import java.util.*;
 import java.util.List;
 
 class StepPanel extends JPanel {
-    private StepResult step;
-    // private ArrayList<EdgePanel> fromEdges; // 自分に入ってくるリンク
-    JPanel rpanel;
     JLabel alabel;
 
-    // StepPanel(Assertion ast) {
-    //     // fromEdges = new ArrayList<>();
-
-    //     // setLayout();
-    //     // setBackground(Color.ORANGE);
-    //     // setBorder(new BevelBorder(BevelBorder.RAISED));
-
-    //     rpanel = new JPanel();
-    //     alabel = new JLabel(ast.getName());
-    //     add(alabel);
-    // }
-
-    StepPanel(StepResult step) {
-        this.step = step;
-        // fromEdges = new ArrayList<>();
-
+    StepPanel(Assertion ast) {
         setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
         setBackground(Color.ORANGE);
         setBorder(new BevelBorder(BevelBorder.RAISED));
+        setSize(200, 30);
+        setLocation(10, 10);
 
-        JPanel rpanel = new RulePanel(step.getApply());
-        JLabel alabel = new JLabel(step.getSuccess().getName());
-
-        add(rpanel);
-        add(Box.createGlue());  // 隙間
+        alabel = new JLabel(ast.getName());
         add(alabel);
     }
 
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        paintArrow(g);
+    StepPanel(StepResult step) {
+        setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+        setBackground(Color.ORANGE);
+        setBorder(new BevelBorder(BevelBorder.RAISED));
+        setSize(200, 150);
+        setLocation(10, 10);
+
+        Rule apply = step.getApply();
+        if (apply != null) {
+            JPanel rpanel = new RulePanel(apply);
+            add(rpanel);
+        }
+
+        JLabel alabel = new JLabel(" => " + step.getSuccess().getName());
+        add(alabel);
     }
 
-    void paintArrow(Graphics g) {
-        int fromX = rpanel.getX() + (rpanel.getWidth() / 2);
-        int fromY = rpanel.getY() + rpanel.getHeight();
-        int toX = alabel.getX() + (alabel.getWidth() / 2);
-        int toY = alabel.getY();
+    // @Override
+    // public void paintComponent(Graphics g) {
+    //     super.paintComponent(g);
+    //     paintArrow(g);
+    // }
 
-        g.setColor(Color.BLUE);
-        g.drawLine(fromX, fromY, toX, toY);
-    }
+    // void paintArrow(Graphics g) {
+    //     int fromX = rpanel.getX() + (rpanel.getWidth() / 2);
+    //     int fromY = rpanel.getY() + rpanel.getHeight();
+    //     int toX = alabel.getX() + (alabel.getWidth() / 2);
+    //     int toY = alabel.getY();
+
+    //     g.setColor(Color.BLUE);
+    //     g.drawLine(fromX, fromY, toX, toY);
+    // }
 
     class RulePanel extends JPanel {
         RulePanel(Rule rule) {
             setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+            setBackground(Color.ORANGE);
+            setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
-            add(new JLabel("rule  " + rule.getName()));
-            for(String s : rule.getAntecedents()) {
-                add(new JLabel("if    " + s));
+            add(new JLabel("rule: " + rule.getName()));
+            add(new JLabel("if: "));
+            for (String s : rule.getAntecedents()) {
+                add(new JLabel("      " + s));
             }
-            add(new JLabel("then  " + rule.getConsequent()));
+            add(new JLabel("then: " + rule.getConsequent()));
         }
     }
 }
-
 
 class EdgePanel extends JPanel {
     private StepPanel topPnl;
@@ -83,7 +82,6 @@ class EdgePanel extends JPanel {
         this.btmPnl = btmPnl;
         grace = 10;
         pass = false;
-
         topPoint = new Point(topPnl.getX() + (topPnl.getWidth() / 2), topPnl.getY() + topPnl.getHeight());
         btmPoint = new Point(btmPnl.getX() + (btmPnl.getWidth() / 2), btmPnl.getY());
 
@@ -102,7 +100,7 @@ class EdgePanel extends JPanel {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D)g;
+        Graphics2D g2d = (Graphics2D) g;
         paintArrows(g2d);
     }
 
@@ -116,12 +114,12 @@ class EdgePanel extends JPanel {
         int relX = getLeft();
         int relY = getTop();
 
-        if(pass) {
+        if (pass) {
             g.setColor(Color.RED);
         } else {
             g.setColor(Color.BLUE);
         }
-        BasicStroke stroke = new BasicStroke(5.0f);
+        BasicStroke stroke = new BasicStroke(2.0f);
         g.setStroke(stroke);
         g.drawLine(fromX - relX, fromY - relY, toX - relX, toY - relY);
     }

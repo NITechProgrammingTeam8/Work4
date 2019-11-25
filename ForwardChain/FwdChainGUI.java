@@ -16,10 +16,12 @@ public class FwdChainGUI extends ChainGUI {
         super(title);
         ctable = new FwdChainTable(ruleFileName);
         JPanel mainPnl = ctable;
+        JScrollPane sp = new JScrollPane();
+        sp.getViewport().setView(mainPnl);
         JPanel menuPnl = new MenuPanel();
 
         Container contentPane = getContentPane();
-        contentPane.add(mainPnl, BorderLayout.CENTER);
+        contentPane.add(sp, BorderLayout.CENTER);
         contentPane.add(menuPnl, BorderLayout.WEST);
     }
 }
@@ -29,6 +31,8 @@ class FwdChainTable extends ChainTable {
     Presenter pres;
     HashMap<StepResult, StepPanel> stepMap;
     HashMap<StepResult, EdgePanel> edgeMap;
+    HashMap<Integer, Integer> locMap;
+    int next;
 
     FwdChainTable(String fileName) {
         super(fileName);
@@ -37,6 +41,8 @@ class FwdChainTable extends ChainTable {
         pres.start(new ArrayList<String>(), fileName);
         stepMap = new HashMap<>();
         edgeMap = new HashMap<>();
+        locMap = new HashMap<>();
+        next = 200;
     }
 
     ArrayList<Rule> getRules() {
@@ -45,11 +51,13 @@ class FwdChainTable extends ChainTable {
 
     @Override
     void schStep(ArrayList<String> astList, ArrayList<String> schAst) { // schAst: 前向き推論時はnullも許容したい
+        removeAll();
+
         pres.restart(astList);
         ArrayList<StepResult> stepList = pres.stepResult();
         paintPnls(stepList);
 
-        if (schAst.get(0).equals("")) {  // 複数の質問文は非対応
+        if (schAst.get(0).equals("")) { // 複数の質問文は非対応
             System.out.println("WARNING: 検索文の格納に失敗");
         } else {
             ArrayList<ArrayList<SearchStep>> resList = pres.searchAssertion(schAst); // 型は[質問のリスト]<[質問に対する複数の回答<[回答の導出]>]>，Whatで問われる質問は回答が複数ある場合があるから
@@ -61,20 +69,55 @@ class FwdChainTable extends ChainTable {
     void paintPnls(ArrayList<StepResult> srList) {
         stepMap.clear();
         edgeMap.clear();
+        locMap.clear();
+
         for (StepResult sr : srList) {
-            StepPanel sp = new StepPanel(sr);
-            stepMap.put(sr, sp);
-            // gridbagpaneにして，相対位置はStepPanelのフィールドに保持するか
-            add(sp);
+            tracePar(sr);
+        }
+    }
+
+    void tracePar(StepResult sr) {
+        if (sr.getAddSR() != null) {
+            for (StepResult from : sr.getAddSR()) { // 各StepPanelは，リンク(EdgePanel)をどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
+                tracePar(from); // 再帰
+            }
+            StepPanel sp = stepMap.get(sr);
+            if (sp == null) {
+                sp = new StepPanel(sr); // ここで作ったり
+                stepMap.put(sr, sp);
+                add(sp);
+
+                Integer locY = stepMap.get(sr.getAddSR().get(0)).getY() + next;
+                Integer preX = locMap.get(locY);
+                Integer locX = 10;
+                if (preX != null) {
+                    locX = preX + next;
+                }
+                locMap.put(locY, locX);
+                sp.setLocation(locX, locY);
+            }
 
             for (StepResult from : sr.getAddSR()) {
                 StepPanel fromPnl = stepMap.get(from);
                 EdgePanel ep = new EdgePanel(fromPnl, sp);
-                edgeMap.put(sr, ep);  // 各StepPanelは，リンク(EdgePanel)をどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
-                // layout.putConstraint(, ep, , , , ); // SpringLayoutだとこれの定義に条件分岐が必要そう
+                edgeMap.put(sr, ep);
                 add(ep);
             }
+        } else {
+            if (!stepMap.containsKey(sr)) {
+                StepPanel sp = new StepPanel(sr.getSuccess()); // ここで作ったり
+                stepMap.put(sr, sp);
+                add(sp);
 
+                Integer locY = 10;
+                Integer preX = locMap.get(locY);
+                Integer locX = 10;
+                if (preX != null) {
+                    locX = preX + next;
+                }
+                locMap.put(locY, locX);
+                sp.setLocation(locX, locY);
+            }
         }
     }
 

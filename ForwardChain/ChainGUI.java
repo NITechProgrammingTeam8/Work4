@@ -35,8 +35,11 @@ public class ChainGUI extends JFrame {
                     udRuleMod();
                 }
             });
-            
+
             JPanel schPnl = new JPanel();
+            // GridLayout gl = new GridLayout();
+            // gl.setRows(1);
+            // schPnl.setLayout(gl);
 
             wmTA = new JTextArea(10, 25);
             schTF = new JTextField(20);
@@ -49,7 +52,8 @@ public class ChainGUI extends JFrame {
             schPnl.add(schBtn);
 
             editPnl = new JPanel();
-            // setLayout(new BoxLayout(editPnl, BoxLayout.PAGE_AXIS));
+            // editPnl.setLayout(gl);
+            // gl.setRows(1);
 
             ruleMod = new DefaultListModel();
             rulePnl = new JList(ruleMod);
@@ -93,8 +97,8 @@ public class ChainGUI extends JFrame {
             String cmd = e.getActionCommand();
 
             if (cmd.equals("検索")) {
-                ArrayList<String> astList = new ArrayList<>(Arrays.asList(wmTA.getText().split("¥n")));
-                // ArrayList<String> schAst = new ArrayList<>(Arrays.asList(schTA.getText().split("¥n")));  //  複数の質問文のとき？
+                ArrayList<String> astList = new ArrayList<>(Arrays.asList(wmTA.getText().split("\n")));
+                // ArrayList<String> schAst = new ArrayList<>(Arrays.asList(schTA.getText().split("\n")));  //  複数の質問文のとき？
                 ArrayList<String> schAst = new ArrayList<>();
                 schAst.add(schTF.getText());
 
@@ -119,7 +123,6 @@ public class ChainGUI extends JFrame {
                         System.out.println("削除失敗（未選択のため）");
                     }
                 }
-                udRuleMod();
             }
             status.setText(cmd + "の実行");
         }
@@ -151,7 +154,7 @@ public class ChainGUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String nameText = nameTF.getText();
-                ArrayList<String> ifList = new ArrayList<>(Arrays.asList(ifTA.getText().split("¥n")));
+                ArrayList<String> ifList = new ArrayList<>(Arrays.asList(ifTA.getText().split("\n")));
                 String thenText = thenTF.getText();
     
                 if(rule == null) {
@@ -159,6 +162,7 @@ public class ChainGUI extends JFrame {
                 } else {
                     ctable.udRule(new Rule(nameText, ifList, thenText));
                 }
+                udRuleMod();
             }
 
             void addRule() {
@@ -190,8 +194,7 @@ public class ChainGUI extends JFrame {
 abstract class ChainTable extends JPanel {
 
     ChainTable(String fileName) {
-        SpringLayout layout = new SpringLayout(); // GridBagLayoutの方がいいかも
-        setLayout(layout);
+        setLayout(null);
     }
 
     abstract ArrayList<Rule> getRules();
