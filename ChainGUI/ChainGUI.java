@@ -11,8 +11,8 @@ public class ChainGUI extends JFrame {
     ChainTable ctable;
 
     public static void main(String args[]) {
-        // FwdChainGUI frame = new FwdChainGUI("前向き推論", "CarShop.data");
-        FwdChainGUI frame = new BwdChainGUI("後向き推論", "CarShop.data");
+        FwdChainGUI frame = new FwdChainGUI("前向き推論", "CarShop.data");
+        // BwdChainGUI frame = new BwdChainGUI("後向き推論", "CarShop.data");
         frame.setVisible(true);
     }
 
@@ -133,7 +133,7 @@ public class ChainGUI extends JFrame {
     }
 }
 
-public class FwdChainGUI extends ChainGUI {
+class FwdChainGUI extends ChainGUI {
     FwdChainGUI(String title, String ruleFileName) {
         super(title);
         ctable = new FwdChainTable(ruleFileName);
@@ -146,7 +146,7 @@ public class FwdChainGUI extends ChainGUI {
     }
 }
 
-public class BwdChainGUI extends ChainGUI {
+class BwdChainGUI extends ChainGUI {
     BwdChainGUI(String title, String ruleFileName) {
         super(title);
         ctable = new BwdChainTable(ruleFileName);
