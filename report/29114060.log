@@ -1,4 +1,4 @@
-This is e-upTeX, Version 3.14159265-p3.7-u1.21-160201-2.6 (utf8.uptex) (TeX Live 2016/W32TeX) (preloaded format=uplatex 2017.11.11)  25 NOV 2019 11:45
+This is e-upTeX, Version 3.14159265-p3.7-u1.21-160201-2.6 (utf8.uptex) (TeX Live 2016/W32TeX) (preloaded format=uplatex 2017.11.11)  26 NOV 2019 12:49
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -317,9 +317,10 @@ File: omlcmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 LaTeX Font Info:    Font shape `OML/cmr/m/n' in size <9> not available
 (Font)              Font shape `OML/cmm/m/it' tried instead on input line 150.
  [6] [7] [8] [9] [10]
-[11] [12] [13]
+[11] [12] [13] [14] [15] [16]
 File: images/後ろ向き推論の質問の分類.pdf Graphic file (type pdf)
- <images/後ろ向き推論の質問の分類.pdf> [14] [15]
+
+<images/後ろ向き推論の質問の分類.pdf> [17] [18] [19]
 (./29114060.aux)
 
 LaTeX Warning: There were multiply-defined labels.
@@ -328,10 +329,10 @@ LaTeX Warning: There were multiply-defined labels.
 Here is how much of TeX's memory you used:
  3143 strings out of 493679
  40662 string characters out of 6152742
- 199689 words of memory out of 5000000
+ 248689 words of memory out of 5000000
  6682 multiletter control sequences out of 15000+600000
  18694 words of font info for 92 fonts, out of 8000000 for 9000
  934 hyphenation exceptions out of 8191
  27i,6n,32p,994b,1607s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on 29114060.dvi (15 pages, 54708 bytes).
+Output written on 29114060.dvi (19 pages, 70792 bytes).

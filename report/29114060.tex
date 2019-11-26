@@ -78,7 +78,7 @@ CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用
 \subsection{後ろ向き推論に関して}
 後ろ向き推論は, ある仮説を与え, それが現在のアサーション集合において成り立つかをルールを用いて検証していくため, 英語による質問を仮説に当てはめればよい.
 
-ここで問題となるのは, 英語の質問の内容である. 後ろ向き推論はルールの後件部を見て, その前件部がワーキングメモリにあるかとバックトラックしていくので, 質問内容が後件部の内容でない場合は処理されない. 以下に具体例を用いる.
+ここで問題となるのは, 英語の質問の内容である. 後ろ向き推論はルールの後件部を見て, その前件部がワーキングメモリにあるかとバックトラックしていくので, 質問内容が後件部の内容でない場合は処理されない. 以下に図1とともに, 具体例を用いる.
 
 \begin{figure}[htbp]
  \begin{center}
@@ -89,7 +89,7 @@ CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用
 
 質問の内容が「アコードワゴンは何ですか?」と場合, 「?x is an Accord Wagon」に変換でき, それはルールの後件部の内容なので, そのままバックトラックを行えるが, 「彼が持っている車は何ですか?」という場合, 「his-car is ?x」というパターンに変換でき, これはルールの後件部にはないので, バックトラックに失敗する.(正しくは, his-Car is inexpensiveと出力されてしまう.)
 
-また, 質問内容が後件部の内容ではなく, 前件部の内容に関わる内容の場合, ワーキングメモリ内のアサーションを上から照らし合わせていき, 照合するアサーションで出力される. 上記で述べた「his-Car is ?x」も, ワーキングメモリの1番上に「his-Car is inexpensive」が存在するため間違って出力されるのである. また, これらより, 同じ文の形を持っている場合, 1つ目のアサーションにヒットすると, 2つ目まで進まないということも同様に成り立つ. 以下を見てもらいたい.
+また, 質問内容が後件部の内容ではなく, 前件部の内容に関わる内容の場合, ワーキングメモリ内のアサーションを上から照らし合わせていき, 照合するアサーションが出力される. 図2を参照してほしい. 上記で述べた「his-Car is ?x」も, ワーキングメモリの1番上に「his-Car is inexpensive」が存在するため間違って出力されるのである. また, これらより, 同じ文の形を持っている場合, 1つ目のアサーションにヒットすると, 2つ目まで進まないということも同様に成り立つ.
 
 \begin{figure}[htbp]
  \begin{center}
@@ -100,14 +100,14 @@ CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用
 
 質問の内容によっては, 「his-car is stylish」に基づく内容を問いたくなるだろう. そういった場合, 「his-car is ?x」という形をしているアサーションが複数ある場合に, 何らかの制限を加える必要がある.
 
-ここで, ワーキングメモリにおけるアサーションに対する質問内容を具体化してみる. 「彼の車は安価です.」と「彼の車はスタイリッシュです.」というアサーションが存在する際, 質問とは何であろうか? 「彼の車は安価ですか?」と「彼の車はスタイリッシュですか?」のYes/Noが返事となる質問ではないだろうか? 逆に, 「彼の車は何ですか？」と質問して「彼の車は安価です.」と返ってきたら, むむむと思うのではないだろうか. だが, 「伊藤の車は何色ですか?」と質問したら, 「伊藤の車は赤色です.」と返答がほしい. 
+ここで, ワーキングメモリにおけるアサーションに対する質問内容を具体化してみる. 「彼の車は安価です.」と「彼の車はスタイリッシュです.」というアサーションが存在する場合, 質問とは何であろうか? 「彼の車は安価ですか?」と「彼の車はスタイリッシュですか?」のYes/Noが返事となる質問ではないだろうか? 逆に, 「彼の車は何ですか？」と質問して「彼の車は安価です.」と返ってきたら, むむむと思うのではないだろうか. だが, 「伊藤の車は何色ですか?」と質問したら, 「伊藤の車は赤色です.」と返答がほしい. \\\\\\
 
-質問内容を, 
+そのため, 質問内容を, 
 \begin{enumerate}
 \item Yes/Noで答えることができる質問
 \item 具体的な答えを返す質問
 \end{enumerate}
-に分類した際, 2の"具体的な答えを返す質問"に応えれるように, ワーキングメモリ内のアサーションの並び方や内容など, 工夫する必要がある.
+に分類した際, 2の"具体的な答えを返す質問"に応えれるように, ワーキングメモリ内のアサーションの並び方や内容など, 工夫する必要がある.\\
 
 "英語の質問"を"変数を含むパターン"に落とし込む方法は前回の課題のようにクエリーに分けて, 適切に並び替える方法をとる.
 
@@ -118,7 +118,7 @@ CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用
  \caption[]{Yes/Noで回答する疑問文の処理}\label{fig:fig1.1}
 \end{figure}
 
-疑問分を肯定文に並び変えるのは, SVC構文の場合は, 先頭の2文字を並び替えだけで, SVO構文の場合は, 先頭文字を削除するだけである. 三人称単数の置き換え(haveをhasやneedをneedsなど)など細かい処理もある. 図3における左の例文と右の例文の大きな処理の違いは, 肯定文のパターンに並び変えた後である. 左の例文では, ルールの後件部に該当する内容なので, バックトラックが行われるが, 右の例文では, ルールの後件部には存在しない内容なので, ワーキングメモリを参照される. ワーキングメモリの参照のされ方は, 上記で述べたように, 上から処理される. このYes/Noの答えを返す内容では, この左右の例文に大きな違いは存在しないが, 次の"具体的な答えを返す質問"の際には, これが大きく関わってくる.
+疑問分を肯定文に並び変えるのは, SVC構文の場合は, 先頭の2文字を並び替えだけで, SVO構文の場合は, 先頭文字を削除するだけである. 三人称単数の置き換え(haveをhasやneedをneedsなど)など細かい処理もある. 図3における左の例文と右の例文の大きな処理の違いは, 肯定文のパターンに並び変えた後である. 左の例文では, ルールの後件部に該当する内容なので, バックトラックが行われるが, 右の例文では, ルールの後件部には存在しない内容なので, ワーキングメモリを参照される. ワーキングメモリの参照のされ方は, 上記で述べたように, 上から処理される. このYes/Noの答えを返す内容では, この左右の例文に大きな違いは存在しないが, 次の"具体的な答えを返す質問"の際には, これが大きく関わってくる.\\
 
 
 具体的な答えを返す質問も似たような処理で英語から変数を含むパターンに落とし込むことができる. 
@@ -133,7 +133,7 @@ CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用
 
 \subsection{前向き推論に関して}
 前向き推論では, ワーキングメモリのアサーション集合とルールにより生成される新たなアサーションを, ワーキングメモリに次々と格納していくので, 質問に答える時には, 質問内容と最終的に出来上がったワーキングメモリに格納されているアサーションを1つ1つ照らし合わせればよい.
-質問の種類もYes/Noと答えるものと, 具体的な値を答える方法の2種類であり, 後ろ向き推論と同じ方法が使える. また, 前向き推論は, 最終的なワーキングメモリだけを参照することから, 後ろ向き推論のようなに, 質問がルールの後件部に当てはまるかどうかを考える必要もない.
+質問の種類もYes/Noと答えるものと, 具体的な値を答える方法の2種類であり, 後ろ向き推論と同じ方法が使える. また, 前向き推論は, 最終的なワーキングメモリだけを参照することから, 後ろ向き推論のような, 質問がルールの後件部に当てはまるかどうかを考える必要もない.
 
 \section{実装}
 英語の質問を変数に含むパターンに変換し, 解析をするメソッドNaturalLanguageメソッドを作成. メイン文で入力された英語の質問(String型)に対して実行し, 答えを出力する. 英語の質問内容を変数を含むパターンに落とす流れは, 後ろ向き推論でも前向き推論でも内容は同じであるが, 後ろ向き推論では, 実際に推論を行うbackwardChainメソッドを最後に使うのに対し, 前向き推論では, 先にforwardChainメソッドを呼び出して推論を行ってから, NaturalLanguageメソッドを呼び出す.そのメソッドを機能ごとに分けて以下に示す.
@@ -439,10 +439,121 @@ patarn = my-car has a VTEC engine
 「前向き推論:その1」の実行結果とは異なり, 新しいワーキングメモリを作成する必要がないので, そのまま出力させている. 正しくYesの答えが返ってきていることが確認できる.
 
 \subsection{CupNoodle.dataに基づく推論システム}
-小中君が考えてくれた, CupNoodleのルール(CupNoodle.data)と, ワーキングメモリ(CupNoodleWm.data)を用いて, 英語による質問応答システムを実行してみる.
+小中君が考えてくれた, CupNoodleのルール(CupNoodle.data)と, ワーキングメモリ(CupNoodleWm.data)を用いて, 英語による質問応答システムを実行してみる. 
 
 \subsubsection{前向き推論}
+推論結果後のワーキングメモリの内容からもとに, 4つの質問をしてみる.
+\begin{lstlisting}
+質問を入力してください
+What is it ?
+質問内容 = What is it ?
+patarn = It is-a ?x
+newWorkingMemory = [It is expensive, It is-a popular-noodle, It has-a kitsune, It has-a green-package, It has-a udon-noodles, It is-a cup-noodle, It is-a Nissin, It is-a Donbe-kitsuneudon]
+答え = popular-noodle
+答え = cup-noodle
+答え = Nissin
+答え = Donbe-kitsuneudon
+もう１回? 1...Yes/ 0...No 
+質問を入力してください
+Is it expensive ?
+質問内容 = Is it expensive ?
+patarn = It is expensive
+答え = Yes
+もう１回? 1...Yes/ 0...No 1
+質問を入力してください
+Does it have a kitsune ?
+質問内容 = Does it have a kitsune ?
+patarn = It has a kitsune
+答え = Yes
+もう１回? 1...Yes/ 0...No 1
+質問を入力してください
+What does it have ?
+質問内容 = What does it have ?
+patarn = It has-a ?x
+newWorkingMemory = [It is expensive, It is-a popular-noodle, It has-a kitsune, It has-a green-package, It has-a udon-noodles, It is-a cup-noodle, It is-a Nissin, It is-a Donbe-kitsuneudon]
+答え = kitsune
+答え = green-package
+答え = udon-noodles
+\end{lstlisting}
 
+Whatで質問された場合には, 「It is a popular noonle」を「It is-a popular-noodle」のように, 変数を含むパターン「It is-a ?x」に対応できる新しいワーキングメモリを作成していることが確認できる. 「What is it ?」と質問したときには, 前向き推論システムの最終結果である「Donbe-kitsuneudon」が最後に出力されており, 正しい質問応答がになっていることが確認できる.
+
+また, Yes/Noで答える質問内容に関しては, 三人称単数の処理(haveをhasに変更など)も上手くいき, 正しくYes/Noの返事が返ってきていることが確認できる.
+
+\subsubsection{後ろ向き推論}
+CupNoodleのワーキングメモリとルールの内容から以下の3つの質問をしてみる.
+\begin{lstlisting}
+質問を入力してください
+Is it expensive ?
+質問内容 = Is it expensive ?
+patarn = It is expensive
+queries = [It is expensive]
+Hypothesis:[It is expensive]
+Success WM
+It is expensive <=> It is expensive
+Yes
+もう１回? 1...Yes/ 0...No 1
+質問を入力してください
+Is it a Donbe-kitsuneudon ?
+質問内容 = Is it a Donbe-kitsuneudon ?
+patarn = It is a Donbe-kitsuneudon
+queries = [It is a Donbe-kitsuneudon]
+Hypothesis:[It is a Donbe-kitsuneudon]
+Success RULE
+Rule:Rule11 [?x10 is a Nissin, ?x10 has a kitsune, ?x10 has a green package, ?x10 has several udon noodles]->?x10 is a Donbe-kitsuneudon <=> It is a Donbe-kitsuneudon
+?x10 is a Donbe-kitsuneudon
+Success RULE
+Rule:Rule5 [?x15 is a cup noodle, ?x15 has Nissin's logo]->?x15 is a Nissin <=> ?x10 is a Nissin
+?x15 is a Nissin
+Success RULE
+Rule:Rule1 [?x16 is expensive]->?x16 is a cup noodle <=> ?x15 is a cup noodle
+?x16 is a cup noodle
+Success WM
+It is expensive <=> ?x16 is expensive
+tmpPoint: 6
+Success:?x15 is a cup noodle
+tmpPoint: -1
+Success RULE
+Rule:Rule6 [?x41 is a cup noodle, ?x41 is a popular noodle]->?x41 is a Nissin <=> ?x10 is a Nissin
+?x41 is a Nissin
+Success RULE
+Rule:Rule1 [?x42 is expensive]->?x42 is a cup noodle <=> ?x41 is a cup noodle
+?x42 is a cup noodle
+Success WM
+It is expensive <=> ?x42 is expensive
+tmpPoint: 6
+Success:?x41 is a cup noodle
+Success WM
+It is a popular noodle <=> ?x41 is a popular noodle
+tmpPoint: 11
+Success:?x10 is a Nissin
+Success WM
+It has a kitsune <=> ?x10 has a kitsune
+tmpPoint: 3
+Success:?x10 has a kitsune
+Success WM
+It has a green package <=> ?x10 has a green package
+tmpPoint: 4
+Success:?x10 has a green package
+Success WM
+It has several udon noodles <=> ?x10 has several udon noodles
+Yes
+{?x10=It, ?x41=It, ?x42=It}
+binding: {?x10=It, ?x41=It, ?x42=It}
+Query: It is a Donbe-kitsuneudon
+Answer:It is a Donbe-kitsuneudon
+もう１回? 1...Yes/ 0...No 1
+質問を入力してください
+What is it ?
+質問内容 = What is it ?
+patarn = It is-a ?x
+queries = [It is-a ?x]
+Hypothesis:[It is-a ?x]
+No
+もう１回? 1...Yes/ 0...No 
+\end{lstlisting}
+
+1つ目の質問はルールの後件部にない内容なので, ワーキングメモリ(WM)だけを探索している. 正しくYesの答えが出力されていることがわかる. 2つ目の質問は, ルールの後件部の内容なので, バックトラックが行われていることが確認できる. その結果, 推論が成功してYesが正しく出力されていることが分かる. この内容は前向き推論の最後の出力アサーションであり, この推論システムが前向き・後ろ向きを通して正しく動いていることの確認にもなる. 最後にWhatで始まる質問をしているが, これには正しく答えることができない.なぜなら, 後ろ向き推論において, 「?x is a cuo noodle」というルールは存在しても, 「It is a ?x」というルールは存在しないためである.
 
 \section{考察}
 今回は前向き推論と後ろ向き推論において, 同じ質問内容でも, その推論システムの機能の違いから, 違うアプローチが必要になることがわかった. 後ろ向き推論における質問の内容には大きく4パターンに分けることができた. 以下を参考にしてもらいたい.
@@ -456,12 +567,14 @@ patarn = my-car has a VTEC engine
 
 これまでさんざん述べてきたように, 後ろ向き推論が仮説を検証することにおいて, 全ての文章に対応していない. あくまで, 仮説にできる内容はルールの後件部の内容であり, それ以外はワーキングメモリを参照するだけである.
 
-また, 今回の自分のように, 英語の質問文をトークンに分けて処理する流れだと, 「?x = a VTEC engine」のような複数のトークンにまたがってしまう答えに応えることがとても大変になってしまった. 実際に前向き推論では新しくワーキングメモリを作らざるを得なくなり, 後ろ向き推論に当たってはうまく答えを出力できていない状態である.
+また, 今回の自分のように, 英語の質問文をトークンに分けて処理する流れだと, 「?x = a VTEC engine」のような複数のトークンにまたがってしまう答えに応えることがとても大変になってしまった. 実際に前向き推論では新しくワーキングメモリを作らざるを得なくなり, 後ろ向き推論に当たっては, ルールの後件部にない内容だということで, 質問に対する答えを上手く出力できていない状態である.
+
+CupNoodle.dataを例に取り上げてみれば, 「What is it ?」の内容に対して, 前向き推論に対しては正しく出力されるが, 後ろ向き推論に対しては正しく出力されない. 最終結果のワーキングメモリを探索するだけでよい前向き推論に対して, ルールの後件部の内容からバックトラックしていく後ろ向き推論は制約が大きいのである. このことからも, 後ろ向き推論の質問応答システムには限界があるといえる.
 
 \section{感想}
 人間の認識システムをプログラムに落としこんだとされるルールベースモデルにおける後ろ向き推論システム, これにおいて, 検証できる仮説の内容が限定さえれてしまうことに驚きを隠せない. 自分の質問のさせ型に全く別のアプローチを用いるか, 新たな知識(ルール)を構築させることで, この現状を打破できるのかどうかについては今後に期待していきたい. 
 
-また, 2つの課題にわたり英語の自然言語を扱ってきたが, 今回のトークンの問題のようにまだまだ再現性が低い状態が続いた. 英語でこの大変さなので, 日本語にいたっては, いくら時間を使っても足りないであろうと感じた. 大量のコーパスを用い, 研究を進める自然言語学者は本当に大変な研究をしていると思った.
+また, 課題3と課題4の2つの課題にわたり英語の自然言語を扱ってきたが, 今回のトークンの問題のようにまだまだ再現性が低い状態が続いた. 英語でこの大変さなので, 日本語にいたっては, いくら時間を使っても足りないであろうと感じた. 大量のコーパスを用い, 研究を進める自然言語学者は本当に大変な研究をしていると思った.\\\\\\\\
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 参考文献
