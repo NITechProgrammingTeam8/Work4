@@ -6,15 +6,15 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
-public class FwdChainGUI extends ChainGUI {
+public class BwdChainGUI extends ChainGUI {
     public static void main(String args[]) {
-        FwdChainGUI frame = new FwdChainGUI("前向き推論", "CarShop.data");
+        BwdChainGUI frame = new BwdChainGUI("後向き推論", "CarShop2.data");
         frame.setVisible(true);
     }
 
-    FwdChainGUI(String title, String ruleFileName) {
+    BwdChainGUI(String title, String ruleFileName) {
         super(title);
-        ctable = new FwdChainTable(ruleFileName);
+        ctable = new BwdChainTable(ruleFileName);
         JPanel mainPnl = ctable;
         JPanel menuPnl = new MenuPanel();
 
@@ -24,7 +24,7 @@ public class FwdChainGUI extends ChainGUI {
     }
 }
 
-class FwdChainTable extends ChainTable {
+class BwdChainTable extends ChainTable {
     View view;
     Presenter pres;
     HashMap<StepResult, StepPanel> stepMap;
@@ -32,11 +32,11 @@ class FwdChainTable extends ChainTable {
     HashMap<Integer, Integer> locMap;
     int next;
 
-    FwdChainTable(String fileName) {
+    BwdChainTable(String fileName) {
         super(fileName);
         view = new View();
         pres = new Presenter(view);
-        pres.start(new ArrayList<String>(), fileName);
+        pres.start(fileName);
         stepMap = new HashMap<>();
         edgeMap = new HashMap<>();
         locMap = new HashMap<>();
@@ -46,33 +46,30 @@ class FwdChainTable extends ChainTable {
     ArrayList<Rule> getRules() {
         return pres.fetchRules();
     }
-
+    
     @Override
-    void schStep(ArrayList<String> astList, ArrayList<String> schAst) { // schAst: 前向き推論時はnullも許容したい
+    void schStep(ArrayList<String> astList, ArrayList<String> schAst) {  // schAst: 後向き推論時nullだとfalse
         removeAll();
-
-        pres.restart(astList);
-        ArrayList<StepResult> stepList = pres.stepResult();
-        paintPnls(stepList);
-
+        
         if (schAst.get(0).equals("")) { // 複数の質問文は非対応
-            System.out.println("WARNING: 検索文の格納に失敗");
+            System.out.println("ERROR: 検索文の格納に失敗");
         } else {
-            ArrayList<ArrayList<SearchStep>> resList = pres.searchAssertion(schAst); // 型は[質問のリスト]<[質問に対する複数の回答<[回答の導出]>]>，Whatで問われる質問は回答が複数ある場合があるから
-            answerPnls(resList.get(0)); // 複数の質問文は非対応
+            ArrayList<SearchStep> resList = pres.stepResults("CarShopWm.data", schAst.get(0));  // そもそもPresenter自体が複数の質問文は非対応
+            answerPnls(resList);
         }
     }
 
-    void paintPnls(ArrayList<StepResult> srList) {
+    @Override
+    void answerPnls(ArrayList<SearchStep> srList) {
         stepMap.clear();
         edgeMap.clear();
         locMap.clear();
 
-        for (StepResult sr : srList) {
+        for (StepResult sr : srList.get(0).getKeiro()) {  // 複数解は１つ目の解のみ表示
             tracePar(sr);
         }
     }
-
+    
     void tracePar(StepResult sr) {
         if (sr.getAddSR() != null) {
             for (StepResult from : sr.getAddSR()) { // 各StepPanelは，リンク(EdgePanel)をどこから来たかだけを所有する？（どこに繋がってゆくかは気にしない）
@@ -102,7 +99,7 @@ class FwdChainTable extends ChainTable {
             }
         } else {
             if (!stepMap.containsKey(sr)) {
-                StepPanel sp = new StepPanel(sr.getSuccess()); // ここで作ったり
+                StepPanel sp = new StepPanel(sr.getAnswer()); // ここで作ったり
                 stepMap.put(sr, sp);
                 add(sp);
 
@@ -115,19 +112,6 @@ class FwdChainTable extends ChainTable {
                 locMap.put(locY, locX);
                 sp.setLocation(locX, locY);
             }
-        }
-    }
-
-    void answerPnls(ArrayList<SearchStep> resList) { // 前向き推論においては，PaintPnlsと別に描写の更新が後にある
-        // for (SearchStep solve : resList) { // solveを切り替えて表示する必要がある．すなわちCardLayout
-        // for(StepResult sp : solve.getKeiro()) {
-        // stepMap.get(sp).passing();
-        // }
-        // }
-
-        SearchStep solve = resList.get(0);  // 複数解は１つ目の解のみ表示
-        for (StepResult sp : solve.getKeiro()) {
-            edgeMap.get(sp).passing();
         }
     }
 
